@@ -1,0 +1,25 @@
+# Flutter & Dart artifacts
+# Generated files
+.dart_tool/
+.packages
+.pub/
+.buildlog
+.idea/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+pubspec.lock
+# iOS
+ios/Flutter/Generated.xcconfig
+ios/Pods/
+ios/Runner/GeneratedPluginRegistrant.*
+ios/Runner/Info.plist
+# Android
+android/.gradle
+android/app/build/
+android/app/debug/
+android/app/release/
+# VS Code
+.vscode/
+# Others
+*.log

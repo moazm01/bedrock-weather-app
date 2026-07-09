@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "853251225782",
+    "project_id": "bedrock-weather-app",
+    "storage_bucket": "bedrock-weather-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:853251225782:android:266f9548831630b62ace17",
+        "android_client_info": {
+          "package_name": "com.abbottabad.bedrock.bedrock_phase1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIbwwxRjtNFmkAlsbUOwMzX0b9hme2dNc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
