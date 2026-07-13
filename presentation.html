@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bedrock Global — Semester Project Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #ffffff; /* Premium white */
+      --surface:   #f5f5f7; /* Apple premium light surface */
+      --glass:     rgba(0, 0, 0, 0.02);
+      --glass-b:   rgba(0, 0, 0, 0.05);
+      --border:    rgba(0, 0, 0, 0.08);
+      --blue:      #0071e3; /* Apple premium blue */
+      --purple:    #8630b5; /* Premium purple */
+      --orange:    #ff9500; /* iOS light mode orange */
+      --red:       #ff3b30; /* iOS light mode red */
+      --green:     #34c759; /* iOS light mode green */
+      --teal:      #008080;
+      --text-1:    #1d1d1f; /* Premium dark gray */
+      --text-2:    #424245; /* Clean gray */
+      --text-3:    #86868b; /* Soft gray */
+      --mono:      'JetBrains Mono', monospace;
+      --sans:      'Outfit', system-ui, sans-serif;
+      --slide-w:   1280px;
+      --slide-h:   720px;
+    }
+
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #f0f0f2;
+      font-family: var(--sans);
+      color: var(--text-1);
+    }
+
+    /* ─── Presentation Shell ────────────────────────────────────────────── */
+    #deck {
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+
+    #slide-viewport {
+      width: var(--slide-w);
+      height: var(--slide-h);
+      transform-origin: center center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    /* ─── Individual Slide ──────────────────────────────────────────────── */
+    .slide {
+      position: absolute; inset: 0;
+      width: var(--slide-w);
+      height: var(--slide-h);
+      background: var(--bg);
+      display: none;
+      flex-direction: column;
+      justify-content: space-between; /* Even vertical distribution */
+      padding: 50px 64px;
+      overflow: hidden;
+    }
+    .slide.active { display: flex; }
+
+    /* Ambient mesh gradient overlay - premium light theme */
+    .slide::before {
+      content: '';
+      position: absolute; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 85% 15%, rgba(0,113,227,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 10% 85%, rgba(134,48,181,0.05) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 35% at 50% 50%, rgba(255,149,0,0.03) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .slide > * { position: relative; z-index: 1; }
+
+    /* Subtle grid texture */
+    .slide::after {
+      content: '';
+      position: absolute; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(0,0,0,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.015) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* ─── Navigation ────────────────────────────────────────────────────── */
+    #nav {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 12px; z-index: 100;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      padding: 10px 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    #nav button {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-2); font-family: var(--sans);
+      font-size: 13px; padding: 6px 14px; border-radius: 20px;
+      transition: all 0.2s;
+      outline: none;
+    }
+    #nav button:hover { background: var(--glass-b); color: var(--text-1); }
+    #nav button.primary {
+      background: var(--blue); color: #fff; font-weight: 600;
+    }
+    #nav button.primary:hover { background: #0056b3; }
+    #slide-counter { color: var(--text-3); font-size: 12px; min-width: 60px; text-align: center; font-weight: 600; }
+
+    #progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--purple), var(--orange));
+      transition: width 0.3s ease; z-index: 200;
+    }
+
+    /* ─── Typography ────────────────────────────────────────────────────── */
+    .label {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--text-3);
+    }
+    .label.blue   { color: var(--blue); }
+    .label.orange { color: #d76a00; }
+    .label.purple { color: var(--purple); }
+    .label.green  { color: var(--green); }
+    .label.teal   { color: var(--teal); }
+
+    h2 { font-size: 46px; font-weight: 800; line-height: 1.1; letter-spacing: -1.2px; color: var(--text-1); }
+    h3 { font-size: 28px; font-weight: 700; line-height: 1.2; letter-spacing: -0.4px; color: var(--text-1); }
+    h4 { font-size: 21px; font-weight: 600; line-height: 1.3; color: var(--text-1); }
+    p  { font-size: 16px; line-height: 1.65; color: var(--text-2); }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .gradient-text-orange {
+      background: linear-gradient(135deg, #d76a00 0%, var(--red) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── Glass Cards ───────────────────────────────── */
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.02);
+      backdrop-filter: blur(10px);
+      transition: border-color 0.3s;
+    }
+    .card-inner { padding: 22px 26px; }
+
+    .card-accent-blue   { border-color: rgba(0,113,227,0.25);  background: rgba(0,113,227,0.02); }
+    .card-accent-orange { border-color: rgba(255,149,0,0.25);  background: rgba(255,149,0,0.02); }
+    .card-accent-purple { border-color: rgba(134,48,181,0.25); background: rgba(134,48,181,0.02); }
+    .card-accent-green  { border-color: rgba(52,199,89,0.25);  background: rgba(52,199,89,0.02); }
+    .card-accent-teal   { border-color: rgba(0,128,128,0.25);  background: rgba(0,128,128,0.02); }
+    .card-accent-red    { border-color: rgba(255,59,48,0.25);  background: rgba(255,59,48,0.02); }
+
+    /* ─── Slide Header Bar ────────────────────────────────────────────────── */
+    .slide-header {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%;
+    }
+    .slide-number-pill {
+      font-size: 11px; font-weight: 600;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px;
+      color: var(--text-3); letter-spacing: 0.08em;
+    }
+
+    /* ─── Divider ──────────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 14px 0;
+    }
+
+    /* ─── Bullet Points ─────────────────────────────────────────────────── */
+    .bullets { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .bullets li {
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 15.5px; line-height: 1.5; color: var(--text-2);
+    }
+    .bullets li .dot {
+      flex-shrink: 0; margin-top: 7px;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--blue);
+    }
+    .bullets li strong { color: var(--text-1); font-weight: 600; }
+
+    /* ─── Code Block (Clean Light GitHub style) ────────────────────────── */
+    .code-block {
+      font-family: var(--mono);
+      font-size: 12.5px; line-height: 1.6;
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-radius: 12px;
+      padding: 14px 18px;
+      overflow: hidden;
+      color: #24292f;
+    }
+    .kw  { color: #cf222e; font-weight: 600; }
+    .fn  { color: #0550ae; }
+    .str { color: #0a3069; }
+    .cm  { color: #6e7781; font-style: italic; }
+    .nm  { color: #0550ae; }
+    .tp  { color: #953800; }
+
+    /* ─── Tag / Pill ────────────────────────────────────────────────────── */
+    .tag {
+      display: inline-block; font-size: 11px; font-weight: 600;
+      padding: 3px 10px; border-radius: 20px;
+      border: 1px solid; letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .tag-blue   { color: var(--blue);   border-color: rgba(0,113,227,0.3);   background: rgba(0,113,227,0.06); }
+    .tag-orange { color: #d76a00;       border-color: rgba(255,149,0,0.3);   background: rgba(255,149,0,0.06); }
+    .tag-purple { color: var(--purple); border-color: rgba(134,48,181,0.3);  background: rgba(134,48,181,0.06); }
+    .tag-green  { color: var(--green);  border-color: rgba(52,199,89,0.3);   background: rgba(52,199,89,0.06); }
+    .tag-teal   { color: var(--teal);   border-color: rgba(0,128,128,0.3);   background: rgba(0,128,128,0.06); }
+
+    /* ─── Metric big number ─────────────────────────────────────────────── */
+    .metric-num   { font-size: 48px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+    .metric-label { font-size: 11px; color: var(--text-3); margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    /* ─── Grid helpers ──────────────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+    .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 24px; }
+
+    /* ─── Decorative accent line ─────────────────────────────────────────── */
+    .accent-line {
+      display: block; width: 44px; height: 3px; border-radius: 2px;
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+      margin-bottom: 12px;
+    }
+
+    /* ─── Flow box ──────────────────────────────────────────────────────── */
+    .flow-box {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px 16px; text-align: center;
+      font-size: 13.5px; font-weight: 600; color: var(--text-1); white-space: nowrap;
+      background: #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+    }
+
+    /* ─── Check list ────────────────────────────────────────────────────── */
+    .check-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .check-list li { display: flex; align-items: center; gap: 12px; font-size: 15.5px; color: var(--text-2); font-weight: 500; }
+    .checkmark {
+      flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(52,199,89,0.1); border: 1px solid rgba(52,199,89,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--green); font-weight: bold;
+    }
+
+    /* ─── Top accent bar ────────────────────────────────────────────────── */
+    .top-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; z-index: 10; }
+    .bar-blue   { background: linear-gradient(90deg, var(--blue), transparent); }
+    .bar-orange { background: linear-gradient(90deg, var(--orange), transparent); }
+    .bar-purple { background: linear-gradient(90deg, var(--purple), transparent); }
+    .bar-green  { background: linear-gradient(90deg, var(--green), transparent); }
+    .bar-teal   { background: linear-gradient(90deg, var(--teal), transparent); }
+
+    /* ─── App badge ─────────────────────────────────────────────────────── */
+    .app-badge {
+      width: 52px; height: 52px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+    }
+
+    /* ─── Slide 1 Cover ─────────────────────────────────────────────────── */
+    #s1 { justify-content: center; }
+    #s1 .cover-inner { display: flex; flex-direction: column; align-items: flex-start; max-width: 760px; }
+    #s1 .course-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 16px; margin-bottom: 20px;
+    }
+    #s1 .course-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+    #s1 .title-line1 { font-size: 72px; font-weight: 800; letter-spacing: -2.5px; line-height: 0.95; color: var(--text-1); }
+    #s1 .title-line2 {
+      font-size: 72px; font-weight: 800; letter-spacing: -2.5px; line-height: 0.95;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 55%, var(--orange) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    #s1 .subtitle { font-size: 16px; color: var(--text-2); margin-top: 20px; max-width: 580px; line-height: 1.65; }
+    #s1 .meta-row { display: flex; align-items: center; gap: 14px; margin-top: 30px; }
+    #s1 .meta-item { font-size: 13px; color: var(--text-3); display: flex; align-items: center; gap: 6px; font-weight: 600; }
+    #s1 .meta-dot  { width: 4px; height: 4px; border-radius: 50%; background: var(--text-3); }
+    #s1 .cover-deco {
+      position: absolute; right: 64px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .deco-card { width: 220px; padding: 16px 20px; background: #ffffff; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.03); }
+    .deco-card .deco-num { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+    .deco-card .deco-lbl { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; font-weight: 700; }
+
+    /* ─── Animations ─────────────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .slide.active > * { animation: fadeUp 0.35s ease both; }
+    .slide.active > *:nth-child(2) { animation-delay: 0.05s; }
+    .slide.active > *:nth-child(3) { animation-delay: 0.10s; }
+    .slide.active > *:nth-child(4) { animation-delay: 0.15s; }
+    .slide.active > *:nth-child(5) { animation-delay: 0.20s; }
+
+    /* ─── Fullscreen button ─────────────────────────────────────────────── */
+    #fs-btn {
+      position: fixed; top: 16px; right: 16px; z-index: 100;
+      background: rgba(255,255,255,0.9); border: 1px solid var(--border);
+      border-radius: 8px; padding: 7px 12px;
+      color: var(--text-2); font-size: 11px; font-family: var(--sans);
+      cursor: pointer; backdrop-filter: blur(12px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      outline: none;
+    }
+    #fs-btn:hover { color: var(--text-1); background: #ffffff; }
+
+    /* ─── Speaker notes ─────────────────────────────────────────────────── */
+    #notes-panel {
+      display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      max-width: 720px; width: 90%;
+      background: rgba(255,255,255,0.96); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px 22px;
+      font-size: 13.5px; color: var(--text-2); line-height: 1.6;
+      z-index: 200; backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+    #notes-panel.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<button id="fs-btn" onclick="toggleFS()">&#x26F6; Fullscreen &nbsp;<kbd style="font-size:10px;background:rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.1);border-radius:3px;padding:1px 5px;color:var(--text-3);">F</kbd></button>
+
+<div id="deck">
+<div id="slide-viewport">
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 1 — COVER (Presenter: Moaz)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide active" id="s1">
+    <div class="top-accent-bar bar-blue"></div>
+    <div class="cover-inner">
+      <div class="course-pill">
+        <span class="dot"></span>
+        <span style="font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:0.08em;text-transform:uppercase;">CSC365 &mdash; HCI &amp; Computer Graphics Project</span>
+      </div>
+      <div class="title-line1">Bedrock Global</div>
+      <div class="title-line2">Weather &amp; Hazard Network</div>
+      <p class="subtitle">
+        A real‑time, offline-first, crowd-sourced hazard alert and weather intelligence system built for global scale—structured and designed using Human-Computer Interaction &amp; Computer Graphics methodologies.
+      </p>
+      
+      <div class="meta-row">
+        <div class="meta-item"><span style="color:var(--blue);">&#9679;</span>&nbsp;Moaz Muhammad (044)</div>
+        <div class="meta-dot"></div>
+        <div class="meta-item"><span style="color:var(--purple);">&#9679;</span>&nbsp;Khuzaima Ali (062)</div>
+        <div class="meta-dot"></div>
+        <div class="meta-item"><span style="color:var(--orange);">&#9679;</span>&nbsp;Muhammad Ibrahim (070)</div>
+      </div>
+    </div>
+
+    <div class="cover-deco">
+      <div class="deco-card card-accent-blue">
+        <div class="deco-num gradient-text">50px</div>
+        <div class="deco-lbl">Fitts's Law Targets</div>
+      </div>
+      <div class="deco-card card-accent-purple">
+        <div class="deco-num" style="background:linear-gradient(135deg,var(--purple),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">> 7.0:1</div>
+        <div class="deco-lbl">Contrast Ratio</div>
+      </div>
+      <div class="deco-card card-accent-orange">
+        <div class="deco-num gradient-text-orange">3-Tier</div>
+        <div class="deco-lbl">Offline Cache</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 2 — GLOBAL CONTEXT: PROBLEMS & SOLUTIONS (Presenter: Moaz)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s2">
+    <div class="top-accent-bar bar-orange"></div>
+    <div class="slide-header">
+      <div>
+        <div class="label orange">Global Context</div>
+        <h2 style="margin-top:4px;">The Global Problem &amp; Bedrock's Resilience</h2>
+      </div>
+      <div class="slide-number-pill">02 / 11</div>
+    </div>
+
+    <div class="grid-2" style="flex: 1; align-items: stretch; margin-top: 15px; margin-bottom: 5px;">
+      <div class="card card-accent-orange card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <span class="accent-line"></span>
+          <h3>🌍 Global Environmental Threats</h3>
+          <p style="font-size:16px;color:var(--text-2);line-height:1.7;margin-top:10px;">
+            Extreme weather anomalies, destructive seismic activities, and sudden localized hazard blocks (such as fires, floods, landslides, or road collapses) represent a universal danger to travelers worldwide. When severe events hit, electrical power grids and cellular network towers are usually the first systems to collapse.
+          </p>
+        </div>
+        <div style="padding:12px 16px;background:rgba(255,149,0,0.06);border:1px solid rgba(255,149,0,0.15);border-radius:10px;font-size:14px;line-height:1.55;color:var(--text-1);">
+          <strong>🔋 Power Constraint Solution:</strong> Bedrock features a high-contrast theme that scales to dark backgrounds to preserve battery lifetime under blackout conditions.
+        </div>
+      </div>
+
+      <div class="card card-accent-blue card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <h3>📡 3-Tier Offline-First Sync Architecture</h3>
+          <p style="font-size:15px;line-height:1.6;color:var(--text-2);margin-top:10px;margin-bottom:14px;">
+            Standard navigation tools crash completely in signal-denied zones. Bedrock implements a structured three-level pipeline fallback to safeguard user safety:
+          </p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="flow-box" style="border-color:rgba(52,199,89,0.3);background:rgba(52,199,89,0.04);"><span style="color:var(--green);">Tier 1:</span> Live Server Firestore Synchronization (Online Stream)</div>
+            <div class="flow-box" style="border-color:rgba(0,113,227,0.3);background:rgba(0,113,227,0.04);"><span style="color:var(--blue);">Tier 2:</span> SharedPreferences &amp; SQLite Local Caches (Offline Data)</div>
+            <div class="flow-box" style="border-color:rgba(134,48,181,0.3);background:rgba(134,48,181,0.04);"><span style="color:var(--purple);">Tier 3:</span> Immutable Static Default Assets (Initial Configuration)</div>
+          </div>
+        </div>
+        <p style="font-size:13.5px;color:var(--text-3);font-style:italic;margin-top:5px;">
+          Ensures warnings remain accessible even when satellite connections drop.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 3 — CONCEPTUAL MODEL & CG METAPHORS (Presenter: Moaz)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s3">
+    <div class="top-accent-bar bar-teal"></div>
+    <div class="slide-header">
+      <div>
+        <div class="label teal">Metaphors &amp; Graphics</div>
+        <h2 style="margin-top:4px;">Unified HUD Cockpit &amp; Vector Rendering</h2>
+      </div>
+      <div class="slide-number-pill">03 / 11</div>
+    </div>
+
+    <div class="grid-2" style="flex:1; align-items:stretch; margin-top:15px; margin-bottom: 5px;">
+      <div class="card card-accent-teal card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <span class="accent-line"></span>
+          <h3>HUD Cockpit Interface Metaphor</h3>
+          <p style="font-size:16px;color:var(--text-2);line-height:1.7;margin-top:10px;">
+            Rather than nested settings pages, the app operates as a **tactical HUD command console**. A custom map provides the base layer, while critical weather graphs and alert windows float on top, matching the mental model of cockpit operations.
+          </p>
+        </div>
+        <div style="padding:14px 18px;background:rgba(0,128,128,0.04);border:1px solid rgba(0,128,128,0.15);border-radius:10px;font-size:14.5px;line-height:1.5;color:var(--text-1);">
+          <strong>Pulsing Threat Circles (Graphics Animation):</strong> Concentric halos pulse on the canvas driven by tickers to warn users of hazard boundaries.
+        </div>
+      </div>
+
+      <div class="card card-inner" style="display:flex; flex-direction:column; justify-content:space-between; padding:22px 26px;">
+        <div>
+          <h3>🎨 Custom Graphics Canvas Engine</h3>
+          <p style="font-size:15.5px;line-height:1.6;color:var(--text-2);margin-top:8px;margin-bottom:14px;">
+            Downloading raster maps uses megabytes of data. Bedrock draws maps, forecasts, and trajectories locally using vector paths:
+          </p>
+          <ul class="bullets">
+            <li><span class="dot" style="background:var(--teal);"></span><span><strong>Vector Maps:</strong> Custom coordinate scaling and path translation (`zoomScale`) drawn on canvas.</span></li>
+            <li><span class="dot" style="background:var(--teal);"></span><span><strong>Spline Charts:</strong> Connects temperature data points using smooth bezier math curves.</span></li>
+            <li><span class="dot" style="background:var(--teal);"></span><span><strong>Solar Trajectories:</strong> Solves trigonometry equations on canvas: `centerX + radius * cos(angle)`.</span></li>
+          </ul>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-3);font-family:var(--mono);">
+          canvas.drawArc() &amp; path.cubicTo() custom paint pipeline
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 4 — HCI DESIGN PRINCIPLES (Presenter: Khuzaima)
+       ─── NOTE: Arranged in a 2x2 grid to distribute content evenly and prevent empty spaces.
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s4">
+    <div class="top-accent-bar bar-purple"></div>
+    <div class="slide-header">
+      <div>
+        <div class="label purple">HCI Principles</div>
+        <h2 style="margin-top:4px;">Good Design Principles Applied</h2>
+      </div>
+      <div class="slide-number-pill">04 / 11</div>
+    </div>
+
+    <div class="grid-2" style="flex:1; align-items:stretch; margin-top:15px; margin-bottom:5px;">
+      
+      <!-- Row 1 Column 1 -->
+      <div class="card card-accent-blue card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <h4 style="color:var(--blue);font-weight:700;">👁️ Visibility of System Status</h4>
+            <span class="tag tag-blue" style="font-size:9px;">Heuristic 1</span>
+          </div>
+          <p style="font-size:14.5px;line-height:1.6;color:var(--text-2);">
+            Ensures users are informed in real-time. Includes state-loading spinners, progress indicators on forms, and live system-wide alert banners at the top of the HUD map shell.
+          </p>
+        </div>
+      </div>
+
+      <!-- Row 1 Column 2 -->
+      <div class="card card-accent-purple card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <h4 style="color:var(--purple);font-weight:700;">🗺️ Natural Mapping &amp; Affordance</h4>
+            <span class="tag tag-purple" style="font-size:9px;">Heuristic 2</span>
+          </div>
+          <p style="font-size:14.5px;line-height:1.6;color:var(--text-2);">
+            Interactive widgets use physical cues (buttons scale down on tap). Menus map database status options directly to emojis (e.g. ⛰️ landslide, 🌊 flood) to align with users' real-world models.
+          </p>
+        </div>
+      </div>
+
+      <!-- Row 2 Column 1 -->
+      <div class="card card-accent-orange card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <h4 style="color:#d76a00;font-weight:700;">🚫 Error-Preventative Constraints</h4>
+            <span class="tag tag-orange" style="font-size:9px;">Heuristic 5</span>
+          </div>
+          <p style="font-size:14.5px;line-height:1.6;color:var(--text-2);">
+            Restricts invalid inputs through validator syntax. Forms disable buttons during active updates to prevent duplicate writes, and require confirmation dialogs before sending data.
+          </p>
+        </div>
+      </div>
+
+      <!-- Row 2 Column 2 -->
+      <div class="card card-accent-green card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <h4 style="color:var(--green);font-weight:700;">🔄 Consistency &amp; Standards</h4>
+            <span class="tag tag-green" style="font-size:9px;">Heuristic 4</span>
+          </div>
+          <p style="font-size:14.5px;line-height:1.6;color:var(--text-2);">
+            Adheres strictly to standard Material Design rules. Integrates adaptive platform switches (`Switch.adaptive`) that automatically adjust to native iOS or Android layouts.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 5 — UNIVERSAL DESIGN & ACCESSIBILITY (Presenter: Khuzaima)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s5">
+    <div class="top-accent-bar bar-teal"></div>
+    <div class="slide-header">
+      <div>
+        <div class="label teal">Accessibility</div>
+        <h2 style="margin-top:4px;">Universal Design &amp; WCAG 2.1 Compliance</h2>
+      </div>
+      <div class="slide-number-pill">05 / 11</div>
+    </div>
+
+    <div class="grid-2" style="flex:1; align-items:stretch; margin-top:15px; margin-bottom: 5px;">
+      <div class="card card-accent-blue card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <span class="accent-line"></span>
+          <h3>🌓 Visual Contrast Standard (1.4.3)</h3>
+          <p style="font-size:16px;color:var(--text-2);line-height:1.7;margin-top:12px;">
+            The interface contrast ratio exceeds **7.0:1** (above the WCAG AA minimum of 4.5:1). High visual contrast is a critical design choice that ensures screen readability for visually impaired users and under direct sunlight.
+          </p>
+        </div>
+        <div style="padding:14px 18px;background:rgba(0,113,227,0.04);border:1px solid rgba(0,113,227,0.15);border-radius:10px;font-size:14px;color:var(--text-1);">
+          <strong>Legibility Gate:</strong> Light gray text elements styled against pure white backgrounds maximize display clarity in well-lit presentation spaces.
+        </div>
+      </div>
+
+      <div class="card card-inner" style="display:flex; flex-direction:column; justify-content:space-between; padding:22px 26px;">
+        <div>
+          <h3>♿ Assistive Technologies &amp; Targets</h3>
+          <p style="font-size:15px;line-height:1.6;color:var(--text-2);margin-top:8px;margin-bottom:14px;">
+            Ensuring the app remains accessible to users regardless of physical ability:
+          </p>
+          <ul class="bullets">
+            <li><span class="dot" style="background:var(--blue);"></span><span><strong>Fitts's Law Touch Targets:</strong> Controls are scaled to a minimum of **50 logical pixels** (exceeding standard 44px) to prevent mis-clicks.</span></li>
+            <li><span class="dot" style="background:var(--blue);"></span><span><strong>Spacing Grids:</strong> Standardized 4dp layout margins separate adjacent inputs.</span></li>
+            <li><span class="dot" style="background:var(--blue);"></span><span><strong>Screen Reader Support:</strong> Descriptive labels, explicit tooltips, and wrapped `Semantics` tags.</span></li>
+          </ul>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-3);font-family:var(--mono);">
+          Semantics() &amp; tooltip wrappers implemented
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 6 — COGNITIVE & EMOTIONAL UX (Presenter: Khuzaima)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s6">
+    <div class="top-accent-bar bar-orange"></div>
+    <div class="slide-header">
+      <div>
+        <div class="label orange">User Experience</div>
+        <h2 style="margin-top:4px;">Minimizing Cognitive Load &amp; Gamification</h2>
+      </div>
+      <div class="slide-number-pill">06 / 11</div>
+    </div>
+
+    <div class="grid-2" style="flex:1; align-items:stretch; margin-top:15px; margin-bottom: 5px;">
+      <div class="card card-accent-orange card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <span class="accent-line"></span>
+          <h3>🧠 Recognition Rather than Recall</h3>
+          <p style="font-size:16px;color:var(--text-2);line-height:1.7;margin-top:12px;">
+            In emergency situations, cognitive capabilities are strained. Bedrock lists key contact numbers (Rescue, Hospital networks) directly in a sliding map drawer, eliminating memory recall.
+          </p>
+        </div>
+        <div style="padding:14px 18px;background:rgba(255,149,0,0.04);border:1px solid rgba(255,149,0,0.15);border-radius:10px;font-size:14px;color:var(--text-1);line-height:1.5;">
+          <strong>💫 Tactile Animations:</strong> Switches use `AnimatedSwitcher` for smooth crossfades. Tapping floating buttons scales them down (`0.96`) for tactile feedback.
+        </div>
+      </div>
+
+      <div class="card card-accent-purple card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <h3>📈 Gamified Reputation &amp; Trust</h3>
+          <p style="font-size:15.5px;line-height:1.6;color:var(--text-2);margin-top:10px;margin-bottom:12px;">
+            Crowdsourcing relies on user honesty. Bedrock implements an active user rating system:
+          </p>
+          <ul class="bullets">
+            <li><span class="dot" style="background:var(--purple);"></span><span>**Reputation Tiers:** Rookie, Trusted, Expert, Veteran status paths.</span></li>
+            <li><span class="dot" style="background:var(--purple);"></span><span>**Calculated Scores:** Trust Coefficient and Verification Rates are updated dynamically.</span></li>
+            <li><span class="dot" style="background:var(--purple);"></span><span>**Social Verification:** Safe transactions block double-votes on warnings.</span></li>
+          </ul>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-3);font-family:var(--mono);">
+          Fosters community-driven data accuracy
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 7 — APP FEATURE SHOWCASE (Presenter: Ibrahim)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s7">
+    <div class="top-accent-bar bar-teal"></div>
+    <div class="slide-header">
+      <div>
+        <div class="label teal">App Features</div>
+        <h2 style="margin-top:4px;">Core Capabilities &amp; Complete Feature Set</h2>
+      </div>
+      <div class="slide-number-pill">07 / 11</div>
+    </div>
+
+    <div class="grid-3" style="flex:1; align-items:stretch; margin-top:15px; margin-bottom: 5px;">
+      
+      <!-- Column 1 -->
+      <div class="card card-accent-blue card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <h4 style="color:var(--blue);margin-bottom:8px;">📡 Real-time weather &amp; seismic tracking</h4>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-2);">
+            Fetches global climate conditions and earthquake logs from Open-Meteo and USGS APIs. Implements Firestore caching (30-min weather TTL, 1-hour seismic TTL) to reduce API consumption costs.
+          </p>
+        </div>
+        <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;font-weight:700;">Global APIs Integrations</div>
+      </div>
+
+      <!-- Column 2 -->
+      <div class="card card-accent-orange card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <h4 style="color:var(--orange);margin-bottom:8px;">✍️ Crowdsourced Incident Intake</h4>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-2);">
+            Allows users to submit alert reports with geo-tagged coordinates, category selectors, and photo attachments. Implements Firebase Storage size validation rules (10MB limit) and automated expirations.
+          </p>
+        </div>
+        <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;font-weight:700;">Media &amp; Database validation</div>
+      </div>
+
+      <!-- Column 3 -->
+      <div class="card card-accent-green card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <h4 style="color:var(--green);margin-bottom:8px;">🛠️ Admin Moderation &amp; Prototypes</h4>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-2);">
+            Features a complete administrative control panel (mutations, user bans, global broadcasts) and a sandbox widgets laboratory to prototype layout components during local development.
+          </p>
+        </div>
+        <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;font-weight:700;">Moderation &amp; UI Sandboxing</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 8 — SYSTEM ARCHITECTURE (Presenter: Ibrahim)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s8">
+    <div class="top-accent-bar bar-blue"></div>
+    <div class="slide-header">
+      <div>
+        <div class="label blue">Architecture</div>
+        <h2 style="margin-top:4px;">Decoupled Design &amp; Clean Architecture Flow</h2>
+      </div>
+      <div class="slide-number-pill">08 / 11</div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;gap:20px;justify-content:center;margin-top:15px;margin-bottom:5px;">
+      <!-- Architecture diagram -->
+      <div style="display:flex;justify-content:center;align-items:center;gap:16px;">
+        <div class="card card-accent-blue" style="padding:14px 20px;text-align:center;width:180px;">
+          <div class="label blue" style="font-size:10px;margin-bottom:4px;">Presentation</div>
+          <div style="font-size:13px;font-weight:700;">UI Screen Layer</div>
+        </div>
+        <div style="font-size:20px;color:var(--text-3); font-weight: bold;">&rarr;</div>
+        <div class="card card-accent-purple" style="padding:14px 20px;text-align:center;width:180px;">
+          <div class="label purple" style="font-size:10px;margin-bottom:4px;">Domain</div>
+          <div style="font-size:13px;font-weight:700;">Business Logic</div>
+        </div>
+        <div style="font-size:20px;color:var(--text-3); font-weight: bold;">&rarr;</div>
+        <div class="card card-accent-orange" style="padding:14px 20px;text-align:center;width:180px;">
+          <div class="label orange" style="font-size:10px;margin-bottom:4px;">Data</div>
+          <div style="font-size:13px;font-weight:700;">Data Repositories</div>
+        </div>
+        <div style="font-size:20px;color:var(--text-3); font-weight: bold;">&rarr;</div>
+        <div class="card card-accent-green" style="padding:14px 20px;text-align:center;width:180px;">
+          <div class="label green" style="font-size:10px;margin-bottom:4px;">Infrastructure</div>
+          <div style="font-size:13px;font-weight:700;">Firebase / Local Cache</div>
+        </div>
+      </div>
+
+      <div class="grid-3" style="gap:24px;">
+        <div class="card card-inner">
+          <h4 style="color:var(--blue);margin-bottom:4px;">📦 Layer Decoupling</h4>
+          <p style="font-size:13.5px;line-height:1.55;color:var(--text-2);">
+            Decoupled using Domain interfaces. By separating wire-format Data Transfer Objects (DTOs) from our Domain Models, database modifications do not break the frontend.
+          </p>
+        </div>
+
+        <div class="card card-inner">
+          <h4 style="color:var(--purple);margin-bottom:4px;">💾 State Preservation</h4>
+          <p style="font-size:13.5px;line-height:1.55;color:var(--text-2);">
+            To prevent screen resets and conserve map zoom positions during tab navigation changes, the core scaffold body is wrapped in an `IndexedStack` widget.
+          </p>
+        </div>
+
+        <div class="card card-inner">
+          <h4 style="color:var(--orange);margin-bottom:4px;">🔐 Secure Storage Auth</h4>
+          <p style="font-size:13.5px;line-height:1.55;color:var(--text-2);">
+            Social sign-ins use the Google SDK. Biometrics credential tokens are encrypted in hardware-backed storage via `flutter_secure_storage`.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 9 — TESTING & VERIFICATION METHODOLOGY (Presenter: Ibrahim)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s9">
+    <div class="top-accent-bar bar-green"></div>
+    <div class="slide-header">
+      <div>
+        <div class="label green">Quality Verification</div>
+        <h2 style="margin-top:4px;">Verification Flow, Usability Audits &amp; Testing</h2>
+      </div>
+      <div class="slide-number-pill">09 / 11</div>
+    </div>
+
+    <div class="grid-2" style="flex: 1; align-items: stretch; margin-top: 15px; margin-bottom: 5px;">
+      <div class="card card-accent-green card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <span class="accent-line"></span>
+          <h3>🧑‍💻 Automated Verification Suites</h3>
+          <p style="font-size:15.5px;color:var(--text-2);line-height:1.65;margin-top:10px;margin-bottom:12px;">
+            We implement automated verification tests across the codebase to ensure execution stability before deployment:
+          </p>
+          <ul class="bullets">
+            <li><span>`repository_unit_test.dart` checks user profiles, voting changes, and parsing logic.</span></li>
+            <li><span>`widget_test.dart` serves as a smoke layout check, verifying visual branding assets.</span></li>
+          </ul>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-3);font-family:var(--mono);">
+          $ flutter test execution verification passed
+        </div>
+      </div>
+
+      <div class="card card-accent-blue card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <h3>👥 Manual Usability Evaluation</h3>
+          <p style="font-size:15.5px;color:var(--text-2);line-height:1.65;margin-top:10px;margin-bottom:12px;">
+            To validate user interaction speed, readability, and task efficiency:
+          </p>
+          <ul class="bullets">
+            <li><span>**Cognitive Walkthroughs:** Walked through critical tasks—such as reporting hazards and account resets.</span></li>
+            <li><span>**Formative Usability Testing:** Tested task completion speeds with simulated users, ensuring the app remains readable outdoors.</span></li>
+            <li><span>**Heuristic Audit:** Verified that all screens comply with Nielsen's 10 usability guidelines.</span></li>
+          </ul>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-3);text-transform:uppercase;font-weight:700;">
+          Manual &amp; cognitive validations
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 10 — USABILITY DIAGNOSTICS & SYSTEM IMPROVEMENTS (Presenter: Ibrahim)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s10">
+    <div class="top-accent-bar bar-red"></div>
+    <div class="slide-header">
+      <div>
+        <div class="label red">System Improvements</div>
+        <h2 style="margin-top:4px;">Debugging Key Usability Blockers</h2>
+      </div>
+      <div class="slide-number-pill">10 / 11</div>
+    </div>
+
+    <div class="grid-2" style="flex: 1; align-items: stretch; margin-top: 15px; margin-bottom: 5px;">
+      <div class="card card-accent-red card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <span class="accent-line"></span>
+          <h4 style="color:var(--red);margin-bottom:4px;">1. Silent Exception Swallowing (Diagnostics)</h4>
+          <p style="font-size:14.5px;color:var(--text-2);line-height:1.65;margin-top:8px;">
+            Data sources swallowed exceptions silently. If queries failed due to network errors or permissions, they returned empty fallbacks with no log history, violating usability diagnostics rules.
+          </p>
+        </div>
+        <div class="code-block" style="margin-top:10px;">
+          <span class="cm">// Old implementation:</span><br>
+          <span class="kw">try</span> { ... } <span class="kw">catch</span> (_) { <span class="kw">return</span> <span class="nm">0</span>; }<br>
+          <span class="cm">// New implementation:</span><br>
+          <span class="kw">try</span> { ... } <span class="kw">catch</span> (e, stack) {<br>
+          &nbsp;&nbsp;LoggerService.<span class="fn">logError</span>(e, stack, context: <span class="str">'Admin'</span>);<br>
+          &nbsp;&nbsp;<span class="kw">return</span> <span class="nm">0</span>;<br>
+          }
+        </div>
+      </div>
+
+      <div class="card card-accent-red card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <h4 style="color:var(--red);margin-bottom:4px;">2. Owner Verification (`isOwnReport` Logic)</h4>
+          <p style="font-size:14.5px;color:var(--text-2);line-height:1.65;margin-top:8px;">
+            The system compared user display names rather than unique UIDs. If two users had identical usernames, they could edit or delete each other's reports.
+          </p>
+        </div>
+        <div style="padding:14px 18px;background:#fdf2f2;border:1px solid rgba(255,59,48,0.25);border-radius:10px;">
+          <h4 style="color:var(--red);margin-bottom:4px;font-size:13px;">🛠️ Symmetrical UID Matching</h4>
+          <p style="font-size:12.5px;line-height:1.45;color:var(--text-2);margin-bottom:6px;">
+            Refactored the checking logic to compare unique user identifiers:
+          </p>
+          <div style="font-family:var(--mono);font-size:11px;background:#f6f8fa;padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;color:#24292f;">
+            <span style="color:#cf222e;">isOwnReport:</span> currentUserId != null &amp;&amp;<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;dto.<span style="color:#0550ae;">reporterId</span> == currentUserId
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       SLIDE 11 — DEMO, FUTURE ROADMAP & Q&A (All Presenters)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s11">
+    <div class="top-accent-bar" style="background:linear-gradient(90deg,var(--blue),var(--purple),var(--orange));"></div>
+    <div class="slide-header">
+      <div>
+        <div class="label" style="background:linear-gradient(90deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700;">Conclusion</div>
+        <h2 style="margin-top:4px;">Live Walkthrough &amp; Questions</h2>
+      </div>
+      <div class="slide-number-pill">11 / 11</div>
+    </div>
+
+    <div class="grid-2" style="flex: 1; align-items: stretch; margin-top: 15px; margin-bottom: 5px;">
+      <div class="card card-accent-blue card-inner" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <h3>🚶 1-Minute Walkthrough Flow</h3>
+          <p style="font-size:14.5px;color:var(--text-2);line-height:1.65;margin-top:8px;">
+            Demonstrating user experience phases chronologically:
+          </p>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin-top:10px;">
+            <div style="font-size:12px;font-weight:700;color:var(--blue);padding:4px 8px;background:rgba(0,113,227,0.1);border-radius:4px;">1. Splash</div>
+            <div style="font-size:13.5px;color:var(--text-2);">Scale &amp; fade animation entry to Onboarding.</div>
+            <div style="font-size:12px;font-weight:700;color:var(--blue);padding:4px 8px;background:rgba(0,113,227,0.1);border-radius:4px;">2. Login</div>
+            <div style="font-size:13.5px;color:var(--text-2);">Form validation and biometrics toggling.</div>
+            <div style="font-size:12px;font-weight:700;color:var(--blue);padding:4px 8px;background:rgba(0,113,227,0.1);border-radius:4px;">3. Map</div>
+            <div style="font-size:13.5px;color:var(--text-2);">Vector path zooming and emergency numbers sheet.</div>
+            <div style="font-size:12px;font-weight:700;color:var(--blue);padding:4px 8px;background:rgba(0,113,227,0.1);border-radius:4px;">4. Report</div>
+            <div style="font-size:13.5px;color:var(--text-2);">Intake form submission and verify votes.</div>
+          </div>
+        </div>
+        <div style="padding:12px 16px;background:rgba(0,113,227,0.04);border:1px solid rgba(0,113,227,0.15);border-radius:10px;font-size:13px;line-height:1.5;color:var(--text-2);">
+          <strong>🔮 Future Work:</strong> Migrate API caching and DB modifications to server-side Firebase Cloud Functions to prevent client write vulnerabilities.
+        </div>
+      </div>
+
+      <div class="card card-accent-purple card-inner" style="display:flex; flex-direction:column; justify-content:space-between; text-align:center;">
+        <div>
+          <h3 style="font-size:36px;letter-spacing:-1px;">Questions &amp;<br>Discussion</h3>
+          <p style="font-size:14.5px;line-height:1.55;color:var(--text-2);margin-top:10px;">
+            We are ready to address questions from the evaluation panel regarding:
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px;">
+            <span class="tag tag-blue">HCI Target Sizing</span>
+            <span class="tag tag-purple">Vector Canvas math</span>
+            <span class="tag tag-orange">Offline-First caching</span>
+            <span class="tag tag-green">Diagnostics</span>
+          </div>
+        </div>
+
+        <div class="grid-3" style="gap:10px;margin-top:12px;">
+          <div class="card card-accent-blue" style="padding:10px 4px;text-align:center;">
+            <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;font-weight:700;">Moaz</div>
+            <div style="font-size:13px;font-weight:800;color:var(--blue);margin-top:2px;">Intro &amp; Metaphors</div>
+          </div>
+          <div class="card card-accent-purple" style="padding:10px 4px;text-align:center;">
+            <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;font-weight:700;">Khuzaima</div>
+            <div style="font-size:13px;font-weight:800;color:var(--purple);margin-top:2px;">HCI &amp; Access</div>
+          </div>
+          <div class="card card-accent-orange" style="padding:10px 4px;text-align:center;">
+            <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;font-weight:700;">Ibrahim</div>
+            <div style="font-size:13px;font-weight:800;color:var(--orange);margin-top:2px;">Arch &amp; Walkthrough</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /slide-viewport -->
+</div><!-- /deck -->
+
+<!-- ─── Navigation Bar ────────────────────────────────────────────────── -->
+<div id="nav">
+  <button onclick="goTo(0)" title="First slide">&#x27EA;</button>
+  <button onclick="prev()">&#x2190; Prev</button>
+  <span id="slide-counter">1 / 11</span>
+  <button class="primary" onclick="next()">Next &#x2192;</button>
+  <button onclick="goTo(totalSlides-1)" title="Last slide">&#x27EB;</button>
+  <button onclick="toggleNotes()" style="margin-left:8px;" title="Speaker notes (N)">&#x1F4DD;</button>
+</div>
+
+<div id="notes-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <strong style="color:var(--text-1);font-size:12px;">&#x1F3A4; Speaker Notes</strong>
+    <button onclick="toggleNotes()" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:14px;">&#x2715;</button>
+  </div>
+  <div id="notes-content"></div>
+</div>
+
+<!-- ─── Scripts ───────────────────────────────────────────────────────── -->
+<script>
+  const notes = [
+    // Slide 1 Notes
+    "Moaz: Welcome panel members. We are presenting 'Bedrock Global', a real-time, offline-first weather dashboard and crowd-sourced hazard alert application designed for worldwide scale. I will introduce the core app pitch, goals, and interface metaphors. Then, Khuzaima Ali will present the HCI design principles, universal design standards, and cognitive factors. Finally, Muhammad Ibrahim will cover our complete feature set, system architecture, verification testing, key diagnostics, and walkthrough.",
+    
+    // Slide 2 Notes
+    "Moaz: Let's outline the global environmental problems Bedrock solves. Natural disaster anomalies (like flash flooding, wildfires, seismic activities, and storm systems) affect commuters worldwide. During extreme events, power grids go black and cellular signals drop. This makes standard online maps useless. Bedrock addresses this using a three-tier offline-first architecture. It syncs live data from Firestore when online, falls back to local SharedPreferences when offline, and loads static default assets if there's a cache miss. To save battery, we support dark AMOLED scaling.",
+    
+    // Slide 3 Notes
+    "Moaz: We define a clear conceptual model to reduce the user's mental model gap. Bedrock uses a 'HUD Command Center/Cockpit' metaphor—the map operates as the dashboard, with sliding overlays. In Computer Graphics, downloading raster maps uses megabytes of data. Instead, we use custom vector rendering (using Flutter's CustomPainter) to draw road paths, temperature spline graphs, and solar trajectories on canvas. This saves network bandwidth and renders with sub-millisecond efficiency. Warning circles pulse on the canvas to warn users of hazard boundaries.",
+    
+    // Slide 4 Notes
+    "Khuzaima: Thank you, Moaz. I will discuss our interaction design principles. First, for Visibility of status, we use loading spinners during database operations, along with a top system broadcast banner. Second, for Mapping, interactive widgets scale down when pressed, and we map database codes to familiar emojis for hazard types. Third, for Constraints, we disable buttons during queries. Finally, we follow consistent styling using visual tokens and adaptive platform toggles.",
+    
+    // Slide 5 Notes
+    "Khuzaima: Moving to Universal Design and accessibility compliance. We evaluated our screens against WCAG 2.1 AA success criteria. Our high-contrast design theme provides contrast ratios exceeding 7:1, ensuring readability under direct sunlight. For Fitts's Law touch target size, we styled all buttons with a minimum height of 50 logical pixels (above the 44px standard) and enforced a 4dp spacing grid. We also added explicit labels and tooltips to hidden fields, and wrapped loading indicators in Semantics widgets for screen reader support.",
+    
+    // Slide 6 Notes
+    "Khuzaima: Let's discuss cognitive and emotional design factors. To minimize memory load, emergency contacts are listed in a sliding sheet on the main map. Emotional design is integrated through premium dark gradients and transition animations (such as smooth crossfades on the recovery form). Lastly, we incorporate a gamified user reputation system (Rookie to Veteran) based on report counts and community votes, encouraging accurate reporting behavior.",
+    
+    // Slide 7 Notes
+    "Ibrahim: Thank you, Khuzaima. I will discuss the app features. Bedrock is not just a layout—it is a fully functional product. It features real-time weather and seismic tracking caching Open-Meteo and USGS API data. It implements a crowdsourced hazard report intake allowing users to upload photo evidence under strict storage restrictions, and vote to verify reports. It also includes an administrative panel to moderate users, send global broadcasts, and purge records, plus a sandbox laboratory for testing UI widgets.",
+    
+    // Slide 8 Notes
+    "Ibrahim: Let's review our system architecture. Bedrock follows Clean Architecture with a strict 'domain -> data -> presentation' flow. By separating Data Transfer Objects from Domain Models, database changes won't break the UI. To prevent losing map zoom levels or scroll positions when switching navigation tabs, we wrap our main shell inside an IndexedStack widget. We also protect credentials using Google social sign-in and encrypted local secure storage.",
+    
+    // Slide 9 Notes
+    "Ibrahim: Let's review our quality verification and testing. We used a multi-tiered approach. For automated testing, unit tests verify user profile modifications and atomic voting transactions in 'repository_unit_test.dart', while widget tests act as a smoke layout check. Manually, we conducted cognitive walkthroughs of key tasks (reporting incidents, resets, and admin access) and formative usability testing with local users to verify visual contrast and interaction speed.",
+    
+    // Slide 10 Notes
+    "Ibrahim: During usability testing and code analysis, we resolved two critical bugs. First, the admin data layer was swallowing exceptions silently with catch-all blocks. If network queries failed, it returned 0 with no logs. We refactored this to inject LoggerService diagnostics while keeping safe fallback returns. Second, the 'isOwnReport' logic compared user display names. If two users had the same username, their reports overlapped. We refactored this to check unique Firebase UIDs instead.",
+    
+    // Slide 11 Notes
+    "Ibrahim: Here is our 1-minute walkthrough flow. We launch into the splash screen, swipe through the onboarding screens, enable biometrics in the settings panel, navigate the HUD map, zoom, view emergency contacts, and submit a hazard report. In the future, we plan to migrate API requests (Open-Meteo, USGS) and caches to server-side Firebase Cloud Functions to prevent client write vulnerabilities. We will also add database pagination to the admin panel. Thank you, and we'd love to take your questions!"
+  ];
+
+  let current = 0;
+  const totalSlides = 11;
+  const slides = document.querySelectorAll('.slide');
+  const counter = document.getElementById('slide-counter');
+  const progress = document.getElementById('progress-bar');
+  const notesPanel = document.getElementById('notes-panel');
+  const notesContent = document.getElementById('notes-content');
+
+  function updateSlide() {
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    counter.textContent = (current + 1) + ' / ' + totalSlides;
+    progress.style.width = (((current + 1) / totalSlides) * 100) + '%';
+    notesContent.textContent = notes[current] || '';
+  }
+
+  function next()  { if (current < totalSlides - 1) { current++; updateSlide(); } }
+  function prev()  { if (current > 0) { current--; updateSlide(); } }
+  function goTo(n) { current = Math.max(0, Math.min(n, totalSlides - 1)); updateSlide(); }
+
+  function toggleNotes() { notesPanel.classList.toggle('visible'); }
+
+  function toggleFS() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+
+  document.addEventListener('keydown', function(e) {
+    switch(e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); next(); break;
+      case 'ArrowLeft':  case 'ArrowUp':             case 'PageUp':   e.preventDefault(); prev(); break;
+      case 'Home': goTo(0); break;
+      case 'End':  goTo(totalSlides - 1); break;
+      case 'f': case 'F': toggleFS(); break;
+      case 'n': case 'N': toggleNotes(); break;
+    }
+  });
+
+  // Scale viewport to fill window, maintaining 16:9
+  function scaleSlide() {
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var scale = Math.min(vw / 1280, vh / 720);
+    document.getElementById('slide-viewport').style.transform = 'scale(' + scale + ')';
+  }
+  window.addEventListener('resize', scaleSlide);
+  scaleSlide();
+  updateSlide();
+</script>
+</body>
+</html>

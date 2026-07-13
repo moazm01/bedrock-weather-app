@@ -6,4 +6,5 @@ abstract class NotificationService {
   Future<String?> getToken();
   Stream<Map<String, dynamic>> get onMessage;
   Future<void> subscribeToTopic(String topic);
+  Future<void> unsubscribeFromTopic(String topic);
 }

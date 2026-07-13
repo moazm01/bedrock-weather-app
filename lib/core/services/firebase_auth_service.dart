@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import '../../data/datasources/remote/firestore_user_datasource.dart';
 import 'auth_service.dart';
 
 class FirebaseAuthService implements AuthService {
@@ -45,17 +46,51 @@ class FirebaseAuthService implements AuthService {
       await user.updateDisplayName(username.trim());
 
       try {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'username': username.trim(),
-          'email': email.trim(),
-          'tier': 'rookie',
-          'totalReports': 0,
-          'verificationRate': 0.0,
-          'trustCoefficient': 0.0,
-        });
+        await FirestoreUserDataSource().createUserProfile(
+          user.uid,
+          email.trim(),
+          username.trim(),
+        );
       } catch (_) {
         // Suppress writing errors if Firestore is not yet configured
       }
+    }
+  }
+
+  @override
+  Future<void> signInWithGoogle() async {
+    final auth = _auth;
+    if (auth == null) {
+      throw Exception(
+        'Firebase is not yet configured. Please follow the instructions to connect your project.',
+      );
+    }
+
+    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+    if (googleUser == null) return;
+
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final userCredential = await auth.signInWithCredential(credential);
+    final user = userCredential.user;
+
+    if (user != null) {
+      final docId = user.uid;
+      try {
+        final doc = await FirestoreUserDataSource().getUserProfile(docId);
+        if (doc == null) {
+          await FirestoreUserDataSource().createUserProfile(
+            docId,
+            user.email ?? '',
+            user.displayName ?? 'Google User',
+          );
+        }
+      } catch (_) {}
     }
   }
 

@@ -139,6 +139,7 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
       distanceMeters: 0.0,
       currentUserVote: VoteState.upvoted,
       isOwnReport: true,
+      reporterId: profileProvider.profile?.uid ?? '',
     );
 
     final success = await feedProvider.submitReport(

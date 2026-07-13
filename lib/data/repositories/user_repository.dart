@@ -28,6 +28,9 @@ class UserRepository implements IUserRepository {
       verificationRate: profile.verificationRate,
       trustCoefficient: profile.trustCoefficient,
       avatarUrl: profile.avatarUrl,
+      createdAt: profile.createdAt,
+      isBanned: profile.isBanned,
+      fcmToken: profile.fcmToken,
     );
     await _userDataSource.updateUserProfile(uid, userDto.toFirestore());
   }

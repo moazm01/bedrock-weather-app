@@ -7,12 +7,16 @@ Color getReputationColor(ReputationTier tier) {
   switch (tier) {
     case ReputationTier.rookie:
       return Colors.grey.shade400;
+    case ReputationTier.helper:
+      return Colors.teal.shade300;
     case ReputationTier.trusted:
       return BedrockTheme.accentBlueDark;
     case ReputationTier.expert:
       return BedrockTheme.hazardCautionDark;
     case ReputationTier.veteran:
       return BedrockTheme.hazardWarningDark;
+    case ReputationTier.admin:
+      return Colors.purpleAccent;
   }
 }
 
@@ -84,12 +88,16 @@ class ReputationTierBadge extends StatelessWidget {
     switch (tier) {
       case ReputationTier.rookie:
         return 'Rookie';
+      case ReputationTier.helper:
+        return 'Helper';
       case ReputationTier.trusted:
         return 'Trusted';
       case ReputationTier.expert:
         return 'Expert';
       case ReputationTier.veteran:
         return 'Veteran';
+      case ReputationTier.admin:
+        return 'Admin';
     }
   }
 

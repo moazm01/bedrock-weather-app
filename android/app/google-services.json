@@ -12,7 +12,20 @@
           "package_name": "com.abbottabad.bedrock.bedrock_phase1"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "853251225782-ojj578v8ffuda27h3kvmua2i7d7v2i9i.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.abbottabad.bedrock.bedrock_phase1",
+            "certificate_hash": "719ead6635b9d7098ff5419b8b1978dd6d7470b8"
+          }
+        },
+        {
+          "client_id": "853251225782-cbevm2e7sqb9tjilpdin04hkfoj6d1tv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAIbwwxRjtNFmkAlsbUOwMzX0b9hme2dNc"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "853251225782-cbevm2e7sqb9tjilpdin04hkfoj6d1tv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "853251225782-oai37g9nv6c2gv1f16ctu1sbmmend3sg.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.abbottabad.bedrock.bedrockPhase1"
+              }
+            }
+          ]
         }
       }
     }

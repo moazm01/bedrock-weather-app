@@ -187,6 +187,28 @@ class FirestoreHazardDataSource {
     }
   }
 
+  /// Batch fetches all votes for a user across all hazards using collection group query.
+  Future<Map<String, String>> getUserVotes(String userId) async {
+    final fs = _firestore;
+    if (fs == null) return {};
+    try {
+      final snapshot = await fs
+          .collectionGroup('votes')
+          .where(FieldPath.documentId, isEqualTo: userId)
+          .get();
+      final Map<String, String> votesMap = {};
+      for (var doc in snapshot.docs) {
+        final hazardId = doc.reference.parent.parent?.id;
+        if (hazardId != null) {
+          votesMap[hazardId] = doc.data()['vote'] as String? ?? 'none';
+        }
+      }
+      return votesMap;
+    } catch (_) {
+      return {};
+    }
+  }
+
   /// Admin action: Mark a hazard report as resolved.
   Future<void> resolveHazard(String hazardId, String resolvedById) async {
     final coll = _hazardsCollection;

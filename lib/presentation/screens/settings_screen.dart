@@ -7,6 +7,7 @@ import '../ui_components/foundation_widgets.dart';
 import '../../core/services/biometric_service.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/user_profile_provider.dart';
+import '../../domain/enums/domain_enums.dart';
 
 // SettingsScreen is a StatefulWidget because we modify local switch states.
 // Reference: https://docs.flutter.dev/ui/interactivity
@@ -147,73 +148,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showAdminPasswordDialog() {
-    final adminPassController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: BedrockTheme.surfaceDark,
-          title: const Text('Authentication Required'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Enter administrator access code',
-                style: TextStyle(
-                  color: BedrockTheme.labelSecondaryDark,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: adminPassController,
-                obscureText: true,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Access Code',
-                  counterText: '',
-                ),
-                style: const TextStyle(
-                  letterSpacing: 8,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                adminPassController.dispose();
-                Navigator.pop(context);
-              },
-              child: const Text('Cancel'),
+  void _accessAdminPanel() async {
+    final available = await _biometricService.isBiometricsAvailable();
+    if (available) {
+      final authenticated = await _biometricService.authenticate();
+      if (authenticated) {
+        if (mounted) {
+          Navigator.of(context).pushNamed('/admin_panel');
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Authentication failed.'),
+              backgroundColor: BedrockTheme.hazardCriticalDark,
             ),
-            ElevatedButton(
-              onPressed: () {
-                if (adminPassController.text == '191105') {
-                  adminPassController.dispose();
-                  Navigator.pop(context);
-                  Navigator.of(context).pushNamed('/admin_panel');
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Access denied. Invalid code.'),
-                    ),
-                  );
-                  adminPassController.dispose();
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Authenticate'),
-            ),
-          ],
-        );
-      },
-    );
+          );
+        }
+      }
+    } else {
+      Navigator.of(context).pushNamed('/admin_panel');
+    }
   }
 
   @override
@@ -386,11 +341,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: GestureDetector(
               onTap: () {
+                final profile = Provider.of<UserProfileProvider>(context, listen: false).profile;
                 setState(() {
                   _versionTapCount++;
                   if (_versionTapCount >= 5) {
                     _versionTapCount = 0;
-                    _showAdminPasswordDialog();
+                    if (profile?.tier == ReputationTier.admin) {
+                      _accessAdminPanel();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Access denied. Administrator privileges required.'),
+                          backgroundColor: BedrockTheme.hazardCriticalDark,
+                        ),
+                      );
+                    }
                   }
                 });
               },

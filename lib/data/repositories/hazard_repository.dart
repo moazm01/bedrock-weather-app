@@ -9,13 +9,28 @@ import '../dto/hazard_dto.dart';
 import '../../core/utils/geohash_util.dart';
 import '../../core/services/connectivity_service.dart';
 import '../../core/services/local_storage_service.dart';
+import '../../core/services/logger_service.dart';
+import 'package:firebase_performance/firebase_performance.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class HazardRepository implements IHazardRepository {
   final FirestoreHazardDataSource _hazardDataSource;
   final LocalStorageService _localStorageService = LocalStorageService();
-  final ConnectivityService _connectivityService = ConnectivityService();
+  final ConnectivityService _connectivityService;
+  final String? Function() _currentUserIdProvider;
+  final FirebasePerformance? _performance;
+  final FirebaseAnalytics? _analytics;
 
-  HazardRepository(this._hazardDataSource);
+  HazardRepository(
+    this._hazardDataSource, {
+    String? Function()? currentUserIdProvider,
+    FirebasePerformance? performance,
+    FirebaseAnalytics? analytics,
+    ConnectivityService? connectivityService,
+  })  : _currentUserIdProvider = currentUserIdProvider ?? (() => FirebaseAuth.instance.currentUser?.uid),
+        _performance = performance,
+        _analytics = analytics,
+        _connectivityService = connectivityService ?? ConnectivityService();
 
   List<HazardDisplayModel> _getMockHazards() {
     return [
@@ -35,6 +50,7 @@ class HazardRepository implements IHazardRepository {
         distanceMeters: 0.0,
         currentUserVote: VoteState.none,
         isOwnReport: false,
+        reporterId: 'mock_reporter_1',
         imageUrl: null,
       ),
       HazardDisplayModel(
@@ -53,6 +69,7 @@ class HazardRepository implements IHazardRepository {
         distanceMeters: 0.0,
         currentUserVote: VoteState.none,
         isOwnReport: false,
+        reporterId: 'mock_reporter_2',
         imageUrl: null,
       ),
       HazardDisplayModel(
@@ -71,6 +88,7 @@ class HazardRepository implements IHazardRepository {
         distanceMeters: 0.0,
         currentUserVote: VoteState.none,
         isOwnReport: false,
+        reporterId: 'mock_reporter_3',
         imageUrl: null,
       ),
       HazardDisplayModel(
@@ -89,6 +107,7 @@ class HazardRepository implements IHazardRepository {
         distanceMeters: 0.0,
         currentUserVote: VoteState.none,
         isOwnReport: false,
+        reporterId: 'mock_reporter_4',
         imageUrl: null,
       ),
       HazardDisplayModel(
@@ -107,6 +126,7 @@ class HazardRepository implements IHazardRepository {
         distanceMeters: 0.0,
         currentUserVote: VoteState.none,
         isOwnReport: false,
+        reporterId: 'mock_reporter_5',
         imageUrl: null,
       ),
     ];
@@ -118,53 +138,20 @@ class HazardRepository implements IHazardRepository {
     double lng,
     double radiusKm,
   ) async {
-    final bool online = await _connectivityService.isConnected();
-    if (!online) {
-      var cached = await _localStorageService.getCachedHazards();
-      if (cached.isEmpty) {
-        cached = _getMockHazards();
-        await _localStorageService.cacheHazards(cached);
-      }
-      final List<HazardDisplayModel> list = [];
-      for (var h in cached) {
-        final distance = _calculateDistance(lat, lng, h.latitude, h.longitude);
-        list.add(
-          HazardDisplayModel(
-            id: h.id,
-            type: h.type,
-            description: h.description,
-            upvotes: h.upvotes,
-            downvotes: h.downvotes,
-            trustScore: h.trustScore,
-            reporterName: h.reporterName,
-            reporterTier: h.reporterTier,
-            reportedAt: h.reportedAt,
-            latitude: h.latitude,
-            longitude: h.longitude,
-            distanceMeters: distance,
-            currentUserVote: h.currentUserVote,
-            isOwnReport: h.isOwnReport,
-            imageUrl: h.imageUrl,
-          ),
-        );
-      }
-      return list;
-    }
-
+    final performance = _performance ?? FirebasePerformance.instance;
+    final trace = performance.newTrace('fetch_nearby_hazards');
+    await trace.start();
     try {
-      final dtos = await _hazardDataSource.getNearbyHazards(lat, lng, radiusKm);
-      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
-      final List<HazardDisplayModel> list = [];
-      if (dtos.isEmpty) {
-        final cached = _getMockHazards();
+      final bool online = await _connectivityService.isConnected();
+      if (!online) {
+        var cached = await _localStorageService.getCachedHazards();
+        if (cached.isEmpty) {
+          cached = _getMockHazards();
+          await _localStorageService.cacheHazards(cached);
+        }
+        final List<HazardDisplayModel> list = [];
         for (var h in cached) {
-          final distance = _calculateDistance(
-            lat,
-            lng,
-            h.latitude,
-            h.longitude,
-          );
+          final distance = _calculateDistance(lat, lng, h.latitude, h.longitude);
           list.add(
             HazardDisplayModel(
               id: h.id,
@@ -181,200 +168,31 @@ class HazardRepository implements IHazardRepository {
               distanceMeters: distance,
               currentUserVote: h.currentUserVote,
               isOwnReport: h.isOwnReport,
+              reporterId: h.reporterId,
               imageUrl: h.imageUrl,
             ),
           );
         }
-      } else {
-        for (var dto in dtos) {
-          final distance = _calculateDistance(
-            lat,
-            lng,
-            dto.latitude,
-            dto.longitude,
-          );
+        await trace.stop();
+        return list;
+      }
 
-          VoteState voteState = VoteState.none;
-          if (currentUserId != null) {
-            final vote = await _hazardDataSource.getUserVote(
-              dto.id,
-              currentUserId,
+      try {
+        final dtos = await _hazardDataSource.getNearbyHazards(lat, lng, radiusKm);
+        final currentUserId = _currentUserIdProvider();
+
+        final List<HazardDisplayModel> list = [];
+        if (dtos.isEmpty) {
+          final cached = _getMockHazards();
+          for (var h in cached) {
+            final distance = _calculateDistance(
+              lat,
+              lng,
+              h.latitude,
+              h.longitude,
             );
-            if (vote == 'up') voteState = VoteState.upvoted;
-            if (vote == 'down') voteState = VoteState.downvoted;
-          }
-
-          list.add(
-            dto.toDomain(
-              distanceMeters: distance,
-              currentUserVote: voteState,
-              isOwnReport:
-                  currentUserId != null &&
-                  dto.reporterName ==
-                      FirebaseAuth.instance.currentUser?.displayName,
-            ),
-          );
-        }
-      }
-
-      await _localStorageService.cacheHazards(list);
-      return list;
-    } catch (_) {
-      var cached = await _localStorageService.getCachedHazards();
-      if (cached.isEmpty) {
-        cached = _getMockHazards();
-        await _localStorageService.cacheHazards(cached);
-      }
-      final List<HazardDisplayModel> list = [];
-      for (var h in cached) {
-        final distance = _calculateDistance(lat, lng, h.latitude, h.longitude);
-        list.add(
-          HazardDisplayModel(
-            id: h.id,
-            type: h.type,
-            description: h.description,
-            upvotes: h.upvotes,
-            downvotes: h.downvotes,
-            trustScore: h.trustScore,
-            reporterName: h.reporterName,
-            reporterTier: h.reporterTier,
-            reportedAt: h.reportedAt,
-            latitude: h.latitude,
-            longitude: h.longitude,
-            distanceMeters: distance,
-            currentUserVote: h.currentUserVote,
-            isOwnReport: h.isOwnReport,
-            imageUrl: h.imageUrl,
-          ),
-        );
-      }
-      return list;
-    }
-  }
-
-  @override
-  Stream<List<HazardDisplayModel>> streamLiveHazards(double lat, double lng) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final userDisplayName = FirebaseAuth.instance.currentUser?.displayName;
-    final controller = StreamController<List<HazardDisplayModel>>();
-
-    _connectivityService.isConnected().then((online) async {
-      if (!online) {
-        var cached = await _localStorageService.getCachedHazards();
-        if (cached.isEmpty) {
-          cached = _getMockHazards();
-          await _localStorageService.cacheHazards(cached);
-        }
-        final List<HazardDisplayModel> list = cached.map((h) {
-          final distance = _calculateDistance(
-            lat,
-            lng,
-            h.latitude,
-            h.longitude,
-          );
-          return HazardDisplayModel(
-            id: h.id,
-            type: h.type,
-            description: h.description,
-            upvotes: h.upvotes,
-            downvotes: h.downvotes,
-            trustScore: h.trustScore,
-            reporterName: h.reporterName,
-            reporterTier: h.reporterTier,
-            reportedAt: h.reportedAt,
-            latitude: h.latitude,
-            longitude: h.longitude,
-            distanceMeters: distance,
-            currentUserVote: h.currentUserVote,
-            isOwnReport: h.isOwnReport,
-            imageUrl: h.imageUrl,
-          );
-        }).toList();
-        controller.add(list);
-        await controller.close();
-      } else {
-        StreamSubscription<List<HazardDto>>? subscription;
-        subscription = _hazardDataSource.streamLiveHazards().listen(
-          (dtos) async {
-            final List<HazardDisplayModel> list = [];
-            if (dtos.isEmpty) {
-              final cached = _getMockHazards();
-              for (var h in cached) {
-                final distance = _calculateDistance(
-                  lat,
-                  lng,
-                  h.latitude,
-                  h.longitude,
-                );
-                list.add(
-                  HazardDisplayModel(
-                    id: h.id,
-                    type: h.type,
-                    description: h.description,
-                    upvotes: h.upvotes,
-                    downvotes: h.downvotes,
-                    trustScore: h.trustScore,
-                    reporterName: h.reporterName,
-                    reporterTier: h.reporterTier,
-                    reportedAt: h.reportedAt,
-                    latitude: h.latitude,
-                    longitude: h.longitude,
-                    distanceMeters: distance,
-                    currentUserVote: h.currentUserVote,
-                    isOwnReport: h.isOwnReport,
-                    imageUrl: h.imageUrl,
-                  ),
-                );
-              }
-            } else {
-              for (var dto in dtos) {
-                final distance = _calculateDistance(
-                  lat,
-                  lng,
-                  dto.latitude,
-                  dto.longitude,
-                );
-
-                VoteState voteState = VoteState.none;
-                if (currentUserId != null) {
-                  final vote = await _hazardDataSource.getUserVote(
-                    dto.id,
-                    currentUserId,
-                  );
-                  if (vote == 'up') voteState = VoteState.upvoted;
-                  if (vote == 'down') voteState = VoteState.downvoted;
-                }
-
-                list.add(
-                  dto.toDomain(
-                    distanceMeters: distance,
-                    currentUserVote: voteState,
-                    isOwnReport:
-                        currentUserId != null &&
-                        dto.reporterName == userDisplayName,
-                  ),
-                );
-              }
-            }
-            await _localStorageService.cacheHazards(list);
-            if (!controller.isClosed) {
-              controller.add(list);
-            }
-          },
-          onError: (err) async {
-            var cached = await _localStorageService.getCachedHazards();
-            if (cached.isEmpty) {
-              cached = _getMockHazards();
-              await _localStorageService.cacheHazards(cached);
-            }
-            final List<HazardDisplayModel> list = cached.map((h) {
-              final distance = _calculateDistance(
-                lat,
-                lng,
-                h.latitude,
-                h.longitude,
-              );
-              return HazardDisplayModel(
+            list.add(
+              HazardDisplayModel(
                 id: h.id,
                 type: h.type,
                 description: h.description,
@@ -389,28 +207,229 @@ class HazardRepository implements IHazardRepository {
                 distanceMeters: distance,
                 currentUserVote: h.currentUserVote,
                 isOwnReport: h.isOwnReport,
+                reporterId: h.reporterId,
                 imageUrl: h.imageUrl,
-              );
-            }).toList();
-            if (!controller.isClosed) {
-              controller.add(list);
-              await controller.close();
-            }
-          },
-        );
+              ),
+            );
+          }
+        } else {
+          final Map<String, String> userVotes = currentUserId != null
+              ? await _hazardDataSource.getUserVotes(currentUserId)
+              : {};
 
-        controller.onCancel = () {
-          subscription?.cancel();
-        };
+          for (var dto in dtos) {
+            final distance = _calculateDistance(
+              lat,
+              lng,
+              dto.latitude,
+              dto.longitude,
+            );
+
+            VoteState voteState = VoteState.none;
+            final userVote = userVotes[dto.id];
+            if (userVote == 'up') voteState = VoteState.upvoted;
+            if (userVote == 'down') voteState = VoteState.downvoted;
+
+            list.add(
+              dto.toDomain(
+                distanceMeters: distance,
+                currentUserVote: voteState,
+                isOwnReport:
+                    currentUserId != null &&
+                    dto.reporterId == currentUserId,
+              ),
+            );
+          }
+        }
+
+        await _localStorageService.cacheHazards(list);
+        await trace.stop();
+        return list;
+      } catch (e, stack) {
+        LoggerService.logError(e, stack, context: 'getNearbyHazardsInner');
+        var cached = await _localStorageService.getCachedHazards();
+        if (cached.isEmpty) {
+          cached = _getMockHazards();
+          await _localStorageService.cacheHazards(cached);
+        }
+        final List<HazardDisplayModel> list = [];
+        for (var h in cached) {
+          final distance = _calculateDistance(lat, lng, h.latitude, h.longitude);
+          list.add(
+            HazardDisplayModel(
+              id: h.id,
+              type: h.type,
+              description: h.description,
+              upvotes: h.upvotes,
+              downvotes: h.downvotes,
+              trustScore: h.trustScore,
+              reporterName: h.reporterName,
+              reporterTier: h.reporterTier,
+              reportedAt: h.reportedAt,
+              latitude: h.latitude,
+              longitude: h.longitude,
+              distanceMeters: distance,
+              currentUserVote: h.currentUserVote,
+              isOwnReport: h.isOwnReport,
+              reporterId: h.reporterId,
+              imageUrl: h.imageUrl,
+            ),
+          );
+        }
+        await trace.stop();
+        return list;
       }
-    });
+    } catch (e, stack) {
+      LoggerService.logError(e, stack, context: 'getNearbyHazardsOuter');
+      await trace.stop();
+      return [];
+    }
+  }
 
-    return controller.stream;
+  @override
+  Stream<List<HazardDisplayModel>> streamLiveHazards(double lat, double lng) async* {
+    final currentUserId = _currentUserIdProvider();
+    final isOnline = await _connectivityService.isConnected();
+
+    if (!isOnline) {
+      var cached = await _localStorageService.getCachedHazards();
+      if (cached.isEmpty) {
+        cached = _getMockHazards();
+        await _localStorageService.cacheHazards(cached);
+      }
+      final List<HazardDisplayModel> list = cached.map((h) {
+        final distance = _calculateDistance(
+          lat,
+          lng,
+          h.latitude,
+          h.longitude,
+        );
+        return HazardDisplayModel(
+          id: h.id,
+          type: h.type,
+          description: h.description,
+          upvotes: h.upvotes,
+          downvotes: h.downvotes,
+          trustScore: h.trustScore,
+          reporterName: h.reporterName,
+          reporterTier: h.reporterTier,
+          reportedAt: h.reportedAt,
+          latitude: h.latitude,
+          longitude: h.longitude,
+          distanceMeters: distance,
+          currentUserVote: h.currentUserVote,
+          isOwnReport: h.isOwnReport,
+          reporterId: h.reporterId,
+          imageUrl: h.imageUrl,
+        );
+      }).toList();
+      yield list;
+      return;
+    }
+
+    try {
+      await for (final dtos in _hazardDataSource.streamLiveHazards()) {
+        final List<HazardDisplayModel> list = [];
+        if (dtos.isEmpty) {
+          final cached = _getMockHazards();
+          for (var h in cached) {
+            final distance = _calculateDistance(
+              lat,
+              lng,
+              h.latitude,
+              h.longitude,
+            );
+            list.add(
+              HazardDisplayModel(
+                id: h.id,
+                type: h.type,
+                description: h.description,
+                upvotes: h.upvotes,
+                downvotes: h.downvotes,
+                trustScore: h.trustScore,
+                reporterName: h.reporterName,
+                reporterTier: h.reporterTier,
+                reportedAt: h.reportedAt,
+                latitude: h.latitude,
+                longitude: h.longitude,
+                distanceMeters: distance,
+                currentUserVote: h.currentUserVote,
+                isOwnReport: h.isOwnReport,
+                reporterId: h.reporterId,
+                imageUrl: h.imageUrl,
+              ),
+            );
+          }
+        } else {
+          final Map<String, String> userVotes = currentUserId != null
+              ? await _hazardDataSource.getUserVotes(currentUserId)
+              : {};
+
+          for (var dto in dtos) {
+            final distance = _calculateDistance(
+              lat,
+              lng,
+              dto.latitude,
+              dto.longitude,
+            );
+
+            VoteState voteState = VoteState.none;
+            final userVote = userVotes[dto.id];
+            if (userVote == 'up') voteState = VoteState.upvoted;
+            if (userVote == 'down') voteState = VoteState.downvoted;
+
+            list.add(
+              dto.toDomain(
+                distanceMeters: distance,
+                currentUserVote: voteState,
+                isOwnReport:
+                    currentUserId != null &&
+                    dto.reporterId == currentUserId,
+              ),
+            );
+          }
+        }
+        await _localStorageService.cacheHazards(list);
+        yield list;
+      }
+    } catch (e, stack) {
+      LoggerService.logError(e, stack, context: 'streamLiveHazards');
+      var cached = await _localStorageService.getCachedHazards();
+      if (cached.isEmpty) {
+        cached = _getMockHazards();
+      }
+      yield cached.map((h) {
+        final distance = _calculateDistance(
+          lat,
+          lng,
+          h.latitude,
+          h.longitude,
+        );
+        return HazardDisplayModel(
+          id: h.id,
+          type: h.type,
+          description: h.description,
+          upvotes: h.upvotes,
+          downvotes: h.downvotes,
+          trustScore: h.trustScore,
+          reporterName: h.reporterName,
+          reporterTier: h.reporterTier,
+          reportedAt: h.reportedAt,
+          latitude: h.latitude,
+          longitude: h.longitude,
+          distanceMeters: distance,
+          currentUserVote: h.currentUserVote,
+          isOwnReport: h.isOwnReport,
+          reporterId: h.reporterId,
+          imageUrl: h.imageUrl,
+        );
+      }).toList();
+    }
   }
 
   @override
   Future<String> submitReport(HazardDisplayModel hazard) async {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final currentUserId = _currentUserIdProvider();
     if (currentUserId == null)
       throw Exception('User must be logged in to submit a report');
 
@@ -428,18 +447,44 @@ class HazardRepository implements IHazardRepository {
       latitude: hazard.latitude,
       longitude: hazard.longitude,
       geohash: geohash,
+      reporterId: currentUserId,
       imageUrl: hazard.imageUrl,
     );
 
-    return await _hazardDataSource.submitHazard(dto, currentUserId);
+    final docId = await _hazardDataSource.submitHazard(dto, currentUserId);
+
+    try {
+      final analytics = _analytics ?? FirebaseAnalytics.instance;
+      analytics.logEvent(
+        name: 'submit_hazard_report',
+        parameters: {
+          'hazard_type': hazard.type.name,
+          'latitude': hazard.latitude,
+          'longitude': hazard.longitude,
+        },
+      );
+    } catch (_) {}
+
+    return docId;
   }
 
   @override
   Future<void> vote(String hazardId, bool isUpvote) async {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final currentUserId = _currentUserIdProvider();
     if (currentUserId == null)
       throw Exception('User must be logged in to vote');
     await _hazardDataSource.voteOnHazard(hazardId, currentUserId, isUpvote);
+
+    try {
+      final analytics = _analytics ?? FirebaseAnalytics.instance;
+      analytics.logEvent(
+        name: 'vote_hazard',
+        parameters: {
+          'hazard_id': hazardId,
+          'vote_type': isUpvote ? 'upvote' : 'downvote',
+        },
+      );
+    } catch (_) {}
   }
 
   // Haversine distance formula

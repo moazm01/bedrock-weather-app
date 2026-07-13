@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'dart:ui';
 import 'firebase_options.dart';
 import 'core/theme/bedrock_theme.dart';
 
 // Services
 import 'core/services/firebase_auth_service.dart';
 import 'core/services/geolocator_location_service.dart';
+import 'core/services/local_storage_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'data/datasources/remote/firestore_user_datasource.dart';
 import 'data/datasources/remote/firestore_hazard_datasource.dart';
 import 'data/datasources/remote/open_meteo_datasource.dart';
@@ -52,10 +57,29 @@ void main() async {
   // booted and binding handles are ready before we execute the runApp method.
   // Reference: https://api.flutter.dev/flutter/widgets/WidgetsFlutterBinding/ensureInitialized.html
   WidgetsFlutterBinding.ensureInitialized();
+  await LocalStorageService.init();
 
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
+    );
+    // Pass all uncaught Flutter errors to Crashlytics
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+
+    // Pass all uncaught asynchronous errors to Crashlytics
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+    // Initialize App Check for app attestation security
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.playIntegrity,
+      appleProvider: AppleProvider.deviceCheck,
+    );
+    // Configure Firestore offline persistence
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
   } catch (e) {
     debugPrint(

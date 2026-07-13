@@ -2,6 +2,7 @@
 # Generated files
 .dart_tool/
 .packages
+build/
 .pub/
 .buildlog
 .idea/
@@ -19,7 +20,21 @@ android/.gradle
 android/app/build/
 android/app/debug/
 android/app/release/
+android/local.properties
 # VS Code
 .vscode/
 # Others
 *.log
+
+# Firebase & secrets — never commit these
+google-services.json
+GoogleService-Info.plist
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart
+
+# Node dependencies & logs
+node_modules/
+.firebase/
+*-debug.log
+

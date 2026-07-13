@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/models/domain_models.dart';
 import '../../domain/enums/domain_enums.dart';
 
@@ -10,6 +11,9 @@ class UserDto {
   final double verificationRate;
   final double trustCoefficient;
   final String? avatarUrl;
+  final DateTime? createdAt;
+  final bool isBanned;
+  final String? fcmToken;
 
   UserDto({
     required this.uid,
@@ -20,6 +24,9 @@ class UserDto {
     required this.verificationRate,
     required this.trustCoefficient,
     this.avatarUrl,
+    this.createdAt,
+    this.isBanned = false,
+    this.fcmToken,
   });
 
   factory UserDto.fromFirestore(Map<String, dynamic> data, String documentId) {
@@ -32,6 +39,9 @@ class UserDto {
       verificationRate: (data['verificationRate'] as num?)?.toDouble() ?? 0.0,
       trustCoefficient: (data['trustCoefficient'] as num?)?.toDouble() ?? 0.0,
       avatarUrl: data['avatarUrl'] as String?,
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      isBanned: data['isBanned'] as bool? ?? false,
+      fcmToken: data['fcmToken'] as String?,
     );
   }
 
@@ -44,6 +54,9 @@ class UserDto {
       'verificationRate': verificationRate,
       'trustCoefficient': trustCoefficient,
       'avatarUrl': avatarUrl,
+      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'isBanned': isBanned,
+      'fcmToken': fcmToken,
     };
   }
 
@@ -57,6 +70,9 @@ class UserDto {
       verificationRate: verificationRate,
       trustCoefficient: trustCoefficient,
       avatarUrl: avatarUrl,
+      createdAt: createdAt,
+      isBanned: isBanned,
+      fcmToken: fcmToken,
     );
   }
 

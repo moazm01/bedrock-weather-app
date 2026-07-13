@@ -180,10 +180,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (v) {
-                                  if (v == null || v.isEmpty)
+                                  if (v == null || v.isEmpty) {
                                     return 'Email is required';
-                                  if (!v.contains('@') || !v.contains('.'))
+                                  }
+                                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                                  if (!emailRegex.hasMatch(v)) {
                                     return 'Enter a valid email address';
+                                  }
                                   return null;
                                 },
                               ),

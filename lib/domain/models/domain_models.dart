@@ -19,6 +19,7 @@ class HazardDisplayModel {
   final double distanceMeters;
   final VoteState currentUserVote;
   final bool isOwnReport;
+  final String reporterId;
   final String? imageUrl;
 
   const HazardDisplayModel({
@@ -36,6 +37,7 @@ class HazardDisplayModel {
     required this.distanceMeters,
     required this.currentUserVote,
     required this.isOwnReport,
+    required this.reporterId,
     this.imageUrl,
   });
 
@@ -47,7 +49,6 @@ class HazardDisplayModel {
   }
 }
 
-// Plain Dart class representing the active user's credentials and score attributes.
 class UserProfileModel {
   final String uid;
   final String username;
@@ -57,6 +58,9 @@ class UserProfileModel {
   final double verificationRate; // 0.0 to 1.0
   final double trustCoefficient;
   final String? avatarUrl;
+  final DateTime? createdAt;
+  final bool isBanned;
+  final String? fcmToken;
 
   const UserProfileModel({
     required this.uid,
@@ -67,6 +71,9 @@ class UserProfileModel {
     required this.verificationRate,
     required this.trustCoefficient,
     this.avatarUrl,
+    this.createdAt,
+    this.isBanned = false,
+    this.fcmToken,
   });
 }
 

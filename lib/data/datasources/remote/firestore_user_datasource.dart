@@ -41,6 +41,8 @@ class FirestoreUserDataSource {
       totalReports: 0,
       verificationRate: 0.0,
       trustCoefficient: 0.0,
+      createdAt: DateTime.now(),
+      isBanned: false,
     );
     try {
       await coll.doc(uid).set(initialData.toFirestore());

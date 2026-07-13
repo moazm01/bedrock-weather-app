@@ -81,7 +81,7 @@ extension HazardTypeX on HazardType {
 enum VoteState { none, upvoted, downvoted }
 
 // Ranks contributors based on their verification submission accuracy.
-enum ReputationTier { rookie, trusted, expert, veteran }
+enum ReputationTier { rookie, helper, trusted, expert, veteran, admin }
 
 enum HazardEventType { created, updated, resolved, escalated, expired }
 

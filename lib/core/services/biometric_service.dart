@@ -3,7 +3,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class BiometricService {
   final LocalAuthentication _auth = LocalAuthentication();
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+    ),
+  );
 
   static const String _keyEnabled = 'biometric_enabled';
   static const String _keyEmail = 'biometric_email';

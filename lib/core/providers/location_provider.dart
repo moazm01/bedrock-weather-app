@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/location_service.dart';
+import '../utils/geohash_util.dart';
+import '../services/fcm_notification_service.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class LocationProvider extends ChangeNotifier {
   final LocationService _locationService;
@@ -10,6 +13,7 @@ class LocationProvider extends ChangeNotifier {
   bool _hasPermission = false;
   bool _isLoading = false;
   StreamSubscription<(double, double)>? _locationSubscription;
+  String? _currentGeohashTopic;
 
   LocationProvider(this._locationService) {
     _init();
@@ -46,6 +50,7 @@ class LocationProvider extends ChangeNotifier {
       final coords = await _locationService.getCurrentLocation();
       _latitude = coords.$1;
       _longitude = coords.$2;
+      _updateGeohashTopic();
     } catch (_) {
       // Fallback already handled by service
     } finally {
@@ -60,6 +65,7 @@ class LocationProvider extends ChangeNotifier {
       (coords) {
         _latitude = coords.$1;
         _longitude = coords.$2;
+        _updateGeohashTopic();
         notifyListeners();
       },
       onError: (_) {
@@ -77,5 +83,29 @@ class LocationProvider extends ChangeNotifier {
   void dispose() {
     _locationSubscription?.cancel();
     super.dispose();
+  }
+  void _updateGeohashTopic() async {
+    final geohash = GeohashUtil.encode(_latitude, _longitude);
+    if (geohash.length >= 5) {
+      final newTopic = 'geohash_${geohash.substring(0, 5)}';
+      if (newTopic != _currentGeohashTopic) {
+        final fcm = FcmNotificationService();
+        if (_currentGeohashTopic != null) {
+          await fcm.unsubscribeFromTopic(_currentGeohashTopic!);
+        }
+        await fcm.subscribeToTopic(newTopic);
+        _currentGeohashTopic = newTopic;
+
+        try {
+          await FirebaseAnalytics.instance.logEvent(
+            name: 'location_search',
+            parameters: {
+              'latitude': _latitude,
+              'longitude': _longitude,
+            },
+          );
+        } catch (_) {}
+      }
+    }
   }
 }

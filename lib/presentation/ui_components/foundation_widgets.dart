@@ -70,12 +70,15 @@ class _BedrockPrimaryButtonState extends State<BedrockPrimaryButton> {
               elevation: 0,
             ),
             child: widget.isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+                    child: Semantics(
+                      label: 'Loading',
+                      child: const CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     ),
                   )
                 : Text(
@@ -219,6 +222,7 @@ class _BedrockPasswordFieldState extends State<BedrockPasswordField> {
             _obscure ? Icons.visibility_off : Icons.visibility,
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           ),
+          tooltip: _obscure ? 'Show password' : 'Hide password',
           onPressed: () => setState(() => _obscure = !_obscure),
         ),
       ),

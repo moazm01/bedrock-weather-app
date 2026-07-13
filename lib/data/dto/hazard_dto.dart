@@ -16,6 +16,7 @@ class HazardDto {
   final double latitude;
   final double longitude;
   final String geohash;
+  final String reporterId;
   final String? imageUrl;
 
   HazardDto({
@@ -31,6 +32,7 @@ class HazardDto {
     required this.latitude,
     required this.longitude,
     required this.geohash,
+    required this.reporterId,
     this.imageUrl,
   });
 
@@ -52,6 +54,7 @@ class HazardDto {
       latitude: (data['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (data['longitude'] as num?)?.toDouble() ?? 0.0,
       geohash: data['geohash'] as String? ?? '',
+      reporterId: data['reporterId'] as String? ?? '',
       imageUrl: data['imageUrl'] as String?,
     );
   }
@@ -71,6 +74,7 @@ class HazardDto {
       'geohash': geohash.isEmpty
           ? GeohashUtil.encode(latitude, longitude)
           : geohash,
+      'reporterId': reporterId,
       'imageUrl': imageUrl,
     };
   }
@@ -95,6 +99,7 @@ class HazardDto {
       distanceMeters: distanceMeters,
       currentUserVote: currentUserVote,
       isOwnReport: isOwnReport,
+      reporterId: reporterId,
       imageUrl: imageUrl,
     );
   }

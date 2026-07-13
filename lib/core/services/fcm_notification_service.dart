@@ -71,6 +71,15 @@ class FcmNotificationService implements NotificationService {
     } catch (_) {}
   }
 
+  @override
+  Future<void> unsubscribeFromTopic(String topic) async {
+    final msg = _messaging;
+    if (msg == null) return;
+    try {
+      await msg.unsubscribeFromTopic(topic);
+    } catch (_) {}
+  }
+
   void dispose() {
     _onMessageController.close();
   }

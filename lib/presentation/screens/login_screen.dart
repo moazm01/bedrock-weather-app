@@ -197,10 +197,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
-                          if (v == null || v.isEmpty)
+                          if (v == null || v.isEmpty) {
                             return 'Email is required';
-                          if (!v.contains('@') || !v.contains('.'))
+                          }
+                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                          if (!emailRegex.hasMatch(v)) {
                             return 'Enter a valid email address';
+                          }
                           return null;
                         },
                       ),
@@ -281,12 +284,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       const BedrockDividerWithLabel(label: 'OR'),
                       const SizedBox(height: BedrockConstants.space24),
                       BedrockOAuthButton(
-                        onPressed: () {
-                          Provider.of<UserProfileProvider>(
-                            context,
-                            listen: false,
-                          ).loadProfile('mock_user_id');
-                          Navigator.of(context).pushReplacementNamed('/main');
+                        onPressed: () async {
+                          final auth = Provider.of<AuthProvider>(context, listen: false);
+                          final userProfileProvider = Provider.of<UserProfileProvider>(context, listen: false);
+                          final navigator = Navigator.of(context);
+
+                          final success = await auth.signInWithGoogle();
+                          if (success) {
+                            final uid = auth.currentUserId;
+                            if (uid != null) {
+                              userProfileProvider.startListening(uid);
+                            }
+                            navigator.pushReplacementNamed('/main');
+                          }
                         },
                       ),
 

@@ -5,10 +5,23 @@ import '../../domain/enums/domain_enums.dart';
 
 class LocalStorageService {
   static const String _keyHazards = 'cached_hazards';
+  
+  static SharedPreferences? _prefs;
+
+  static Future<void> init() async {
+    _prefs ??= await SharedPreferences.getInstance();
+  }
+
+  SharedPreferences get _instance {
+    if (_prefs == null) {
+      throw Exception('LocalStorageService not initialized. Call init() first.');
+    }
+    return _prefs!;
+  }
 
   Future<void> cacheHazards(List<HazardDisplayModel> hazards) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _instance;
       final List<Map<String, dynamic>> jsonList = hazards.map((h) {
         return {
           'id': h.id,
@@ -22,6 +35,7 @@ class LocalStorageService {
           'reportedAt': h.reportedAt.toIso8601String(),
           'latitude': h.latitude,
           'longitude': h.longitude,
+          'reporterId': h.reporterId,
           'imageUrl': h.imageUrl,
         };
       }).toList();
@@ -31,7 +45,7 @@ class LocalStorageService {
 
   Future<List<HazardDisplayModel>> getCachedHazards() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _instance;
       final String? jsonStr = prefs.getString(_keyHazards);
       if (jsonStr == null || jsonStr.isEmpty) return [];
 
@@ -53,6 +67,7 @@ class LocalStorageService {
           distanceMeters: 0.0,
           currentUserVote: VoteState.none,
           isOwnReport: false,
+          reporterId: data['reporterId'] as String? ?? '',
           imageUrl: data['imageUrl'] as String?,
         );
       }).toList();

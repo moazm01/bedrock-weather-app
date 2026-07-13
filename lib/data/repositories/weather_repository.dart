@@ -3,8 +3,11 @@ import '../../domain/models/weather_model.dart';
 import '../datasources/remote/open_meteo_datasource.dart';
 import '../dto/weather_dto.dart';
 
+import 'package:firebase_performance/firebase_performance.dart';
+
 class WeatherRepository implements IWeatherRepository {
   final OpenMeteoWeatherDataSource _weatherDataSource;
+  final FirebasePerformance? _performance;
 
   // Local caching variables to prevent multiple network queries on the same frame
   Map<String, dynamic>? _cachedJson;
@@ -12,7 +15,10 @@ class WeatherRepository implements IWeatherRepository {
   double? _cachedLat;
   double? _cachedLng;
 
-  WeatherRepository(this._weatherDataSource);
+  WeatherRepository(
+    this._weatherDataSource, {
+    FirebasePerformance? performance,
+  }) : _performance = performance;
 
   Future<Map<String, dynamic>> _getOrFetchWeather(
     double lat,
@@ -29,12 +35,21 @@ class WeatherRepository implements IWeatherRepository {
       return _cachedJson!;
     }
 
-    final json = await _weatherDataSource.fetchWeatherData(lat, lng);
-    _cachedJson = json;
-    _cacheTime = now;
-    _cachedLat = lat;
-    _cachedLng = lng;
-    return json;
+    final performance = _performance ?? FirebasePerformance.instance;
+    final trace = performance.newTrace('fetch_weather_data');
+    await trace.start();
+    try {
+      final json = await _weatherDataSource.fetchWeatherData(lat, lng);
+      _cachedJson = json;
+      _cacheTime = now;
+      _cachedLat = lat;
+      _cachedLng = lng;
+      await trace.stop();
+      return json;
+    } catch (_) {
+      await trace.stop();
+      rethrow;
+    }
   }
 
   @override
