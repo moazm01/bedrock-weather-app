@@ -18,6 +18,7 @@ class WeatherProvider extends ChangeNotifier {
   List<WeatherModel> get dailyForecast => _dailyForecast;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get isUsingServerCache => _weatherRepository.isUsingServerCache;
 
   Future<void> fetchWeather(double lat, double lng) async {
     _isLoading = true;

@@ -196,11 +196,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         label: 'Email',
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
                         validator: (v) {
                           if (v == null || v.isEmpty) {
                             return 'Email is required';
                           }
-                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                          if (v.length > 100) {
+                            return 'Email must be less than 100 characters';
+                          }
+                          final emailRegex = RegExp(
+                            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                          );
                           if (!emailRegex.hasMatch(v)) {
                             return 'Enter a valid email address';
                           }
@@ -212,10 +218,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         label: 'Password',
                         controller: _passwordController,
                         validator: (v) {
-                          if (v == null || v.isEmpty)
+                          if (v == null || v.isEmpty) {
                             return 'Password is required';
-                          if (v.length < 6)
-                            return 'Password must be at least 6 characters';
+                          }
+                          if (v.length < 8) {
+                            return 'Password must be at least 8 characters';
+                          }
                           return null;
                         },
                       ),

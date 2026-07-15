@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'dart:convert';
+import 'dart:math' as math;
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,15 +27,21 @@ class _WeatherScreenState extends State<WeatherScreen> {
   List<HourlyForecast> _hourlyForecast = [];
   List<DailyForecast> _dailyForecast = [];
 
+  String _selectedCityName = 'Abbottabad';
+  double? _customLatitude;
+  double? _customLongitude;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final loc = Provider.of<LocationProvider>(context, listen: false);
+      final lat = _customLatitude ?? loc.latitude;
+      final lng = _customLongitude ?? loc.longitude;
       Provider.of<WeatherProvider>(
         context,
         listen: false,
-      ).fetchWeather(loc.latitude, loc.longitude);
+      ).fetchWeather(lat, lng);
     });
   }
 
@@ -123,12 +132,47 @@ class _WeatherScreenState extends State<WeatherScreen> {
     return Scaffold(
       backgroundColor: Colors.black, // Lock in pure black AMOLED background
       appBar: AppBar(
-        title: const Text('Abbottabad'),
+        title: Text(_selectedCityName),
         backgroundColor: Colors.black,
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
+          if (!weatherProvider.isUsingServerCache)
+            IconButton(
+              icon: const Icon(
+                Icons.info_outline,
+                color: Colors.amber,
+              ),
+              tooltip: 'Direct API Fallback Mode',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text('Direct API Fallback'),
+                    content: const Text(
+                      'This weather data is being fetched directly from the Open-Meteo REST API.\n\n'
+                      'To enable server-side caching and reduce device bandwidth, '
+                      'deploy the getWeatherData Cloud Function (requires a Firebase Blaze Plan).',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('OK'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          IconButton(
+            icon: const Icon(
+              Icons.search_rounded,
+              color: Colors.white,
+            ),
+            tooltip: 'Search City',
+            onPressed: () => _showCitySearchSheet(context),
+          ),
           IconButton(
             icon: const Icon(
               Icons.add_location_alt_rounded,
@@ -137,25 +181,17 @@ class _WeatherScreenState extends State<WeatherScreen> {
             tooltip: 'Report Local Weather',
             onPressed: () => _showReportWeatherDialog(context),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-            onPressed: () {
-              weatherProvider.fetchWeather(
-                locationProvider.latitude,
-                locationProvider.longitude,
-              );
-            },
-          ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          await locationProvider.updateLocation();
+          if (_customLatitude == null) {
+            await locationProvider.updateLocation();
+          }
           if (context.mounted) {
-            await weatherProvider.fetchWeather(
-              locationProvider.latitude,
-              locationProvider.longitude,
-            );
+            final lat = _customLatitude ?? locationProvider.latitude;
+            final lng = _customLongitude ?? locationProvider.longitude;
+            await weatherProvider.fetchWeather(lat, lng);
           }
         },
         child: SingleChildScrollView(
@@ -367,7 +403,11 @@ class _WeatherScreenState extends State<WeatherScreen> {
                 alignment: Alignment.centerRight,
                 child: CustomPaint(
                   size: const Size(100, 120),
-                  painter: NightSkyIllustrationPainter(),
+                  painter: DynamicWeatherIllustrationPainter(
+                    isNight: current != null
+                        ? (current.timestamp.hour < 6 || current.timestamp.hour >= 18)
+                        : (DateTime.now().hour < 6 || DateTime.now().hour >= 18),
+                  ),
                 ),
               ),
             ],
@@ -1533,6 +1573,305 @@ class _WeatherScreenState extends State<WeatherScreen> {
       },
     );
   }
+
+  void _showCitySearchSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: BedrockTheme.surfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(BedrockConstants.radiusLarge),
+        ),
+      ),
+      builder: (sheetContext) {
+        return _CitySearchSheet(
+          onCitySelected: (name, lat, lng) {
+            setState(() {
+              _selectedCityName = name;
+              _customLatitude = lat;
+              _customLongitude = lng;
+            });
+            Provider.of<WeatherProvider>(context, listen: false)
+                .fetchWeather(lat, lng);
+          },
+          onUseLiveLocation: () {
+            setState(() {
+              _selectedCityName = 'Abbottabad';
+              _customLatitude = null;
+              _customLongitude = null;
+            });
+            final loc = Provider.of<LocationProvider>(context, listen: false);
+            Provider.of<WeatherProvider>(context, listen: false)
+                .fetchWeather(loc.latitude, loc.longitude);
+          },
+          isUsingLiveLocation: _customLatitude == null,
+        );
+      },
+    );
+  }
+}
+
+class _CitySearchSheet extends StatefulWidget {
+  final void Function(String name, double lat, double lng) onCitySelected;
+  final VoidCallback onUseLiveLocation;
+  final bool isUsingLiveLocation;
+
+  const _CitySearchSheet({
+    required this.onCitySelected,
+    required this.onUseLiveLocation,
+    required this.isUsingLiveLocation,
+  });
+
+  @override
+  State<_CitySearchSheet> createState() => _CitySearchSheetState();
+}
+
+class _CitySearchSheetState extends State<_CitySearchSheet> {
+  final _searchController = TextEditingController();
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _searchResults = [];
+  String? _errorMessage;
+
+  final List<Map<String, dynamic>> _popularCities = [
+    {'name': 'Abbottabad', 'lat': 34.1500, 'lng': 73.2000, 'country': 'Pakistan'},
+    {'name': 'Islamabad', 'lat': 33.6844, 'lng': 73.0479, 'country': 'Pakistan'},
+    {'name': 'Karachi', 'lat': 24.8607, 'lng': 67.0011, 'country': 'Pakistan'},
+    {'name': 'Lahore', 'lat': 31.5204, 'lng': 74.3587, 'country': 'Pakistan'},
+    {'name': 'Peshawar', 'lat': 34.0151, 'lng': 71.5249, 'country': 'Pakistan'},
+    {'name': 'Murree', 'lat': 33.9070, 'lng': 73.3943, 'country': 'Pakistan'},
+    {'name': 'London', 'lat': 51.5074, 'lng': -0.1278, 'country': 'United Kingdom'},
+    {'name': 'New York', 'lat': 40.7128, 'lng': -74.0060, 'country': 'United States'},
+  ];
+
+  Future<void> _performSearch() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _searchResults = [];
+    });
+
+    try {
+      final response = await http.get(Uri.parse(
+        'https://geocoding-api.open-meteo.com/v1/search?name=$query&count=5&language=en&format=json'
+      ));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['results'] != null) {
+          final resultsList = List<Map<String, dynamic>>.from(data['results']);
+          setState(() {
+            _searchResults = resultsList;
+          });
+        } else {
+          setState(() {
+            _errorMessage = 'No cities found matching "$query"';
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage = 'Failed to load search results.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Connection error. Please try again.';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Search Weather Locations',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Search Field
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _performSearch(),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Enter city name (e.g. Tokyo, Rawalpindi)...',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.03),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: BedrockTheme.borderSubtle),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.blueAccent),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: _performSearch,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.search_rounded, color: Colors.white),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Error Message
+          if (_errorMessage != null) ...[
+            Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Search Results
+          if (_searchResults.isNotEmpty) ...[
+            const Text(
+              'Search Results',
+              style: TextStyle(color: Colors.white30, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 180),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _searchResults.length,
+                itemBuilder: (context, index) {
+                  final city = _searchResults[index];
+                  final name = city['name'] as String? ?? '';
+                  final country = city['country'] as String? ?? '';
+                  final admin1 = city['admin1'] as String? ?? '';
+                  final lat = (city['latitude'] as num?)?.toDouble() ?? 0.0;
+                  final lng = (city['longitude'] as num?)?.toDouble() ?? 0.0;
+                  
+                  final subtitle = admin1.isNotEmpty ? '$admin1, $country' : country;
+
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(name, style: const TextStyle(color: Colors.white)),
+                    subtitle: Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.5))),
+                    trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 14),
+                    onTap: () {
+                      widget.onCitySelected(name, lat, lng);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // Live GPS Location button
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              side: BorderSide(
+                color: widget.isUsingLiveLocation ? Colors.blueAccent : BedrockTheme.borderSubtle,
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              widget.onUseLiveLocation();
+              Navigator.pop(context);
+            },
+            icon: Icon(
+              Icons.my_location_rounded,
+              color: widget.isUsingLiveLocation ? Colors.blueAccent : Colors.white70,
+            ),
+            label: Text(
+              widget.isUsingLiveLocation ? 'Using Live Location (GPS)' : 'Use Current Live Location (GPS)',
+              style: TextStyle(
+                color: widget.isUsingLiveLocation ? Colors.blueAccent : Colors.white70,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Preset Cities
+          const Text(
+            'Popular Locations',
+            style: TextStyle(color: Colors.white30, fontSize: 11, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _popularCities.map((city) {
+              final name = city['name'] as String;
+              final lat = city['lat'] as double;
+              final lng = city['lng'] as double;
+              return ActionChip(
+                backgroundColor: BedrockTheme.cardDark,
+                side: const BorderSide(color: BedrockTheme.borderSubtle),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                label: Text(name, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                onPressed: () {
+                  widget.onCitySelected(name, lat, lng);
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1575,54 +1914,95 @@ class DailyForecast {
 // Custom Painters
 // ---------------------------------------------------------------------------
 
-// Paints a beautiful night sky vector inside the Summary Card header.
-class NightSkyIllustrationPainter extends CustomPainter {
+// Paints a beautiful dynamic sky vector inside the Summary Card header.
+class DynamicWeatherIllustrationPainter extends CustomPainter {
+  final bool isNight;
+
+  DynamicWeatherIllustrationPainter({required this.isNight});
+
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Draw Crescent Moon
-    final moonPaint = Paint()
-      ..color = Colors.white.withOpacity(0.85)
-      ..style = PaintingStyle.fill;
+    if (isNight) {
+      // 1. Draw Crescent Moon
+      final moonPaint = Paint()
+        ..color = Colors.white.withOpacity(0.85)
+        ..style = PaintingStyle.fill;
 
-    // Outer circle
-    canvas.drawCircle(
-      Offset(size.width * 0.6, size.height * 0.35),
-      24,
-      moonPaint,
-    );
+      // Outer circle
+      canvas.drawCircle(
+        Offset(size.width * 0.6, size.height * 0.35),
+        24,
+        moonPaint,
+      );
 
-    // Mask circle (offsets to carve the crescent moon curve)
-    final maskPaint = Paint()
-      ..color = BedrockTheme.cardDark
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(
-      Offset(size.width * 0.72, size.height * 0.31),
-      22,
-      maskPaint,
-    );
+      // Mask circle (offsets to carve the crescent moon curve)
+      final maskPaint = Paint()
+        ..color = BedrockTheme.cardDark
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(
+        Offset(size.width * 0.72, size.height * 0.31),
+        22,
+        maskPaint,
+      );
 
-    // 2. Draw Stars
-    final starPaint = Paint()..color = Colors.white.withOpacity(0.6);
-    canvas.drawCircle(
-      Offset(size.width * 0.15, size.height * 0.25),
-      1.2,
-      starPaint,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.3, size.height * 0.45),
-      1.5,
-      starPaint,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.8, size.height * 0.7),
-      1.0,
-      starPaint,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.4, size.height * 0.15),
-      1.8,
-      starPaint,
-    );
+      // 2. Draw Stars
+      final starPaint = Paint()..color = Colors.white.withOpacity(0.6);
+      canvas.drawCircle(
+        Offset(size.width * 0.15, size.height * 0.25),
+        1.2,
+        starPaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.3, size.height * 0.45),
+        1.5,
+        starPaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.8, size.height * 0.7),
+        1.0,
+        starPaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.4, size.height * 0.15),
+        1.8,
+        starPaint,
+      );
+    } else {
+      // Draw a gorgeous glowing Sun!
+      final sunPaint = Paint()
+        ..color = Colors.amberAccent
+        ..style = PaintingStyle.fill;
+
+      // Outer glowing halo
+      final haloPaint = Paint()
+        ..color = Colors.amber.withOpacity(0.15)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(
+        Offset(size.width * 0.6, size.height * 0.35),
+        28,
+        haloPaint,
+      );
+
+      // Draw Sun body
+      canvas.drawCircle(
+        Offset(size.width * 0.6, size.height * 0.35),
+        18,
+        sunPaint,
+      );
+
+      // Draw light rays
+      final rayPaint = Paint()
+        ..color = Colors.amber.withOpacity(0.4)
+        ..strokeWidth = 2.0
+        ..style = PaintingStyle.stroke;
+
+      final center = Offset(size.width * 0.6, size.height * 0.35);
+      for (double angle = 0; angle < 2 * math.pi; angle += math.pi / 4) {
+        final start = Offset(center.dx + 22 * math.cos(angle), center.dy + 22 * math.sin(angle));
+        final end = Offset(center.dx + 28 * math.cos(angle), center.dy + 28 * math.sin(angle));
+        canvas.drawLine(start, end, rayPaint);
+      }
+    }
 
     // 3. Draw a flat vector cloud overlapping
     final cloudPaint = Paint()..color = Colors.white.withOpacity(0.08);
@@ -1642,8 +2022,8 @@ class NightSkyIllustrationPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant NightSkyIllustrationPainter oldDelegate) =>
-      false;
+  bool shouldRepaint(covariant DynamicWeatherIllustrationPainter oldDelegate) =>
+      oldDelegate.isNight != isNight;
 }
 
 // Draws the hourly temperatures connected by a continuous spline line graph.

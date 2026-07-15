@@ -7,7 +7,6 @@ import '../ui_components/foundation_widgets.dart';
 import '../../core/services/biometric_service.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/user_profile_provider.dart';
-import '../../domain/enums/domain_enums.dart';
 
 // SettingsScreen is a StatefulWidget because we modify local switch states.
 // Reference: https://docs.flutter.dev/ui/interactivity
@@ -167,8 +166,90 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       }
     } else {
-      Navigator.of(context).pushNamed('/admin_panel');
+      if (mounted) {
+        Navigator.of(context).pushNamed('/admin_panel');
+      }
     }
+  }
+
+  void _showPasscodeDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: BedrockTheme.surfaceDark,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: BedrockTheme.borderSubtle),
+          ),
+          title: const Text(
+            'Admin Passcode',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Enter the administrator passcode to access developer panel features.',
+                style: TextStyle(color: BedrockTheme.labelSecondaryDark, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                obscureText: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'Passcode',
+                  labelStyle: const TextStyle(color: BedrockTheme.labelSecondaryDark),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.03),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: BedrockTheme.borderSubtle),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.blueAccent),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white30)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                final input = controller.text.trim();
+                Navigator.pop(dialogContext);
+                if (input == '191105') {
+                  _accessAdminPanel();
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Access denied. Invalid Passcode.'),
+                        backgroundColor: BedrockTheme.hazardCriticalDark,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Unlock', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -247,46 +328,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: BedrockConstants.space24),
-
-          // Section 2: DEV TOOLS / RUBRIC DEMO
-          const Padding(
-            padding: EdgeInsets.only(left: 8, bottom: 8),
-            child: Text(
-              'INTERACTIVE COMPONENTS SHOWCASE',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: BedrockTheme.labelSecondaryDark,
-                letterSpacing: 1.0,
-              ),
-            ),
-          ),
-          Material(
-            color: BedrockTheme.cardDark,
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: BedrockTheme.borderSubtle),
-            ),
-            child: ListTile(
-              leading: const Icon(
-                Icons.science_outlined,
-                color: Colors.purpleAccent,
-              ),
-              title: const Text('Interactive Widgets Lab'),
-              subtitle: const Text(
-                'Abbottabad Grid, Radio, Slider & Date/Time Pickers',
-              ),
-              trailing: const Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.white30,
-              ),
-              onTap: () {
-                Navigator.of(context).pushNamed('/widgets_lab');
-              },
-            ),
-          ),
           const SizedBox(height: BedrockConstants.space32),
 
           // Red destructive log out styling
@@ -341,21 +382,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: GestureDetector(
               onTap: () {
-                final profile = Provider.of<UserProfileProvider>(context, listen: false).profile;
                 setState(() {
                   _versionTapCount++;
                   if (_versionTapCount >= 5) {
                     _versionTapCount = 0;
-                    if (profile?.tier == ReputationTier.admin) {
-                      _accessAdminPanel();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Access denied. Administrator privileges required.'),
-                          backgroundColor: BedrockTheme.hazardCriticalDark,
-                        ),
-                      );
-                    }
+                    _showPasscodeDialog();
                   }
                 });
               },

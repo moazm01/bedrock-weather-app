@@ -45,15 +45,18 @@ class _HazardFeedScreenState extends State<HazardFeedScreen>
     List<HazardDisplayModel> allHazards,
     int tabIndex,
   ) {
-    if (tabIndex == 0) return allHazards;
-    if (tabIndex == 1)
+    if (tabIndex == 0) {
+      return allHazards;
+    }
+    if (tabIndex == 1) {
       return allHazards
           .where(
             (h) =>
                 h.type == HazardType.flood || h.type == HazardType.flashFlood,
           )
           .toList();
-    if (tabIndex == 2)
+    }
+    if (tabIndex == 2) {
       return allHazards
           .where(
             (h) =>
@@ -61,6 +64,7 @@ class _HazardFeedScreenState extends State<HazardFeedScreen>
                 h.type == HazardType.landslide,
           )
           .toList();
+    }
     return allHazards;
   }
 
@@ -73,6 +77,35 @@ class _HazardFeedScreenState extends State<HazardFeedScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Abbottabad Hazard Feed'),
+        actions: [
+          if (!reliefWebProvider.isUsingServerCache)
+            IconButton(
+              icon: const Icon(
+                Icons.info_outline,
+                color: Colors.amber,
+              ),
+              tooltip: 'Direct API Fallback Mode',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text('Direct API Fallback'),
+                    content: const Text(
+                      'This UN ReliefWeb feed is being fetched directly from the ReliefWeb API.\n\n'
+                      'To enable server-side caching and reduce device bandwidth, '
+                      'deploy the getReliefWebReports Cloud Function (requires a Firebase Blaze Plan).',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('OK'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(

@@ -61,6 +61,10 @@ class UserProfileModel {
   final DateTime? createdAt;
   final bool isBanned;
   final String? fcmToken;
+  final String? bio;
+  final DateTime? birthdate;
+  final List<String> followers;
+  final List<String> following;
 
   const UserProfileModel({
     required this.uid,
@@ -74,7 +78,47 @@ class UserProfileModel {
     this.createdAt,
     this.isBanned = false,
     this.fcmToken,
+    this.bio,
+    this.birthdate,
+    this.followers = const [],
+    this.following = const [],
   });
+
+  UserProfileModel copyWith({
+    String? uid,
+    String? username,
+    String? email,
+    ReputationTier? tier,
+    int? totalReports,
+    double? verificationRate,
+    double? trustCoefficient,
+    String? avatarUrl,
+    DateTime? createdAt,
+    bool? isBanned,
+    String? fcmToken,
+    String? bio,
+    DateTime? birthdate,
+    List<String>? followers,
+    List<String>? following,
+  }) {
+    return UserProfileModel(
+      uid: uid ?? this.uid,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      tier: tier ?? this.tier,
+      totalReports: totalReports ?? this.totalReports,
+      verificationRate: verificationRate ?? this.verificationRate,
+      trustCoefficient: trustCoefficient ?? this.trustCoefficient,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      createdAt: createdAt ?? this.createdAt,
+      isBanned: isBanned ?? this.isBanned,
+      fcmToken: fcmToken ?? this.fcmToken,
+      bio: bio ?? this.bio,
+      birthdate: birthdate ?? this.birthdate,
+      followers: followers ?? this.followers,
+      following: following ?? this.following,
+    );
+  }
 }
 
 // Model containing static text segments displaying inside the onboarding PageView slides.

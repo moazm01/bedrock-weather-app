@@ -17,8 +17,11 @@ class WeatherRepository implements IWeatherRepository {
 
   WeatherRepository(
     this._weatherDataSource, {
-    FirebasePerformance? performance,
-  }) : _performance = performance;
+    this._performance,
+  });
+
+  @override
+  bool get isUsingServerCache => _weatherDataSource.lastRequestUsedServerCache;
 
   Future<Map<String, dynamic>> _getOrFetchWeather(
     double lat,

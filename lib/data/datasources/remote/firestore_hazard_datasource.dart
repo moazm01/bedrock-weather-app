@@ -221,4 +221,15 @@ class FirestoreHazardDataSource {
       });
     } catch (_) {}
   }
+
+  /// Update the image URL of a hazard report.
+  Future<void> updateHazardImage(String hazardId, String imageUrl) async {
+    final coll = _hazardsCollection;
+    if (coll == null) return;
+    try {
+      await coll.doc(hazardId).update({
+        'imageUrl': imageUrl,
+      });
+    } catch (_) {}
+  }
 }

@@ -2,13 +2,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users: Auth users can read; write allowed only for own document without mutating tier/trustCoefficient/isBanned
+    // Users: Auth users can read; write allowed only for own document without mutating tier/isBanned
     match /users/{uid} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uid
-        && (!request.resource.data.keys().hasAny(['tier', 'trustCoefficient', 'isBanned']) 
+        && (!request.resource.data.keys().hasAny(['tier', 'isBanned']) 
             || (resource != null && request.resource.data.tier == resource.data.tier 
-                && request.resource.data.trustCoefficient == resource.data.trustCoefficient 
                 && request.resource.data.isBanned == resource.data.isBanned));
     }
 
@@ -37,6 +36,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null 
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'admin';
+    }
+
+    // Weather reports: Anyone can read, authenticated users can write
+    match /weather_reports/{reportId} {
+      allow read: if true;
+      allow create: if request.auth != null;
     }
 
     // Cache collections: Anyone read, write disabled (except server/functions outside of regular client rules)

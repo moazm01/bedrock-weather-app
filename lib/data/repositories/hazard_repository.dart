@@ -24,12 +24,10 @@ class HazardRepository implements IHazardRepository {
   HazardRepository(
     this._hazardDataSource, {
     String? Function()? currentUserIdProvider,
-    FirebasePerformance? performance,
-    FirebaseAnalytics? analytics,
+    this._performance,
+    this._analytics,
     ConnectivityService? connectivityService,
   })  : _currentUserIdProvider = currentUserIdProvider ?? (() => FirebaseAuth.instance.currentUser?.uid),
-        _performance = performance,
-        _analytics = analytics,
         _connectivityService = connectivityService ?? ConnectivityService();
 
   List<HazardDisplayModel> _getMockHazards() {
@@ -430,8 +428,9 @@ class HazardRepository implements IHazardRepository {
   @override
   Future<String> submitReport(HazardDisplayModel hazard) async {
     final currentUserId = _currentUserIdProvider();
-    if (currentUserId == null)
+    if (currentUserId == null) {
       throw Exception('User must be logged in to submit a report');
+    }
 
     final geohash = GeohashUtil.encode(hazard.latitude, hazard.longitude);
     final dto = HazardDto(
@@ -471,8 +470,9 @@ class HazardRepository implements IHazardRepository {
   @override
   Future<void> vote(String hazardId, bool isUpvote) async {
     final currentUserId = _currentUserIdProvider();
-    if (currentUserId == null)
+    if (currentUserId == null) {
       throw Exception('User must be logged in to vote');
+    }
     await _hazardDataSource.voteOnHazard(hazardId, currentUserId, isUpvote);
 
     try {
@@ -485,6 +485,11 @@ class HazardRepository implements IHazardRepository {
         },
       );
     } catch (_) {}
+  }
+
+  @override
+  Future<void> updateHazardImage(String hazardId, String imageUrl) async {
+    await _hazardDataSource.updateHazardImage(hazardId, imageUrl);
   }
 
   // Haversine distance formula

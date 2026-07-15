@@ -14,6 +14,7 @@ class ReliefWebProvider extends ChangeNotifier {
   List<ReliefWebReportModel> get reports => _reports;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get isUsingServerCache => _reliefWebRepository.isUsingServerCache;
 
   Future<void> fetchReports() async {
     _isLoading = true;

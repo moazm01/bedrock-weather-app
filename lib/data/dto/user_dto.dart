@@ -14,6 +14,10 @@ class UserDto {
   final DateTime? createdAt;
   final bool isBanned;
   final String? fcmToken;
+  final String? bio;
+  final DateTime? birthdate;
+  final List<String> followers;
+  final List<String> following;
 
   UserDto({
     required this.uid,
@@ -27,6 +31,10 @@ class UserDto {
     this.createdAt,
     this.isBanned = false,
     this.fcmToken,
+    this.bio,
+    this.birthdate,
+    this.followers = const [],
+    this.following = const [],
   });
 
   factory UserDto.fromFirestore(Map<String, dynamic> data, String documentId) {
@@ -42,6 +50,10 @@ class UserDto {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       isBanned: data['isBanned'] as bool? ?? false,
       fcmToken: data['fcmToken'] as String?,
+      bio: data['bio'] as String?,
+      birthdate: (data['birthdate'] as Timestamp?)?.toDate(),
+      followers: (data['followers'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      following: (data['following'] as List?)?.map((e) => e.toString()).toList() ?? const [],
     );
   }
 
@@ -57,6 +69,10 @@ class UserDto {
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
       'isBanned': isBanned,
       'fcmToken': fcmToken,
+      'bio': bio,
+      'birthdate': birthdate != null ? Timestamp.fromDate(birthdate!) : null,
+      'followers': followers,
+      'following': following,
     };
   }
 
@@ -73,6 +89,10 @@ class UserDto {
       createdAt: createdAt,
       isBanned: isBanned,
       fcmToken: fcmToken,
+      bio: bio,
+      birthdate: birthdate,
+      followers: followers,
+      following: following,
     );
   }
 

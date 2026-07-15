@@ -47,8 +47,8 @@ import 'presentation/screens/main_shell.dart';
 import 'presentation/screens/hazard_report_screen.dart';
 import 'presentation/screens/hazard_detail_screen.dart';
 import 'presentation/screens/settings_screen.dart';
-import 'presentation/screens/flutter_widgets_lab_screen.dart';
 import 'presentation/screens/admin_panel_screen.dart';
+import 'presentation/screens/user_profile_detail_screen.dart';
 
 // The main entrypoint function of the Flutter application.
 // Official Reference: https://docs.flutter.dev/cookbook/navigation/named-routes
@@ -168,7 +168,7 @@ class BedrockApp extends StatelessWidget {
         '/hazard_report': (context) => const HazardReportScreen(),
         '/hazard_detail': (context) => const HazardDetailScreen(),
         '/settings': (context) => const SettingsScreen(),
-        '/widgets_lab': (context) => const FlutterWidgetsLabScreen(),
+        '/profile_detail': (context) => const UserProfileDetailScreen(),
         '/admin_panel': (context) => const AdminPanelScreen(),
       },
     );

@@ -81,10 +81,26 @@ class HazardDetailScreen extends StatelessWidget {
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                       const SizedBox(height: BedrockConstants.space4),
-                      Text(
-                        hazard.reporterName,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pushNamed(
+                            '/profile_detail',
+                            arguments: {
+                              'uid': hazard.reporterId,
+                              'username': hazard.reporterName,
+                            },
+                          );
+                        },
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Text(
+                            hazard.reporterName,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
                         ),
                       ),
                     ],

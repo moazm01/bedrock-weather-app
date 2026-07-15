@@ -149,7 +149,7 @@ class _BedrockSecondaryButtonState extends State<BedrockSecondaryButton> {
 // Inputs (Theme-configured focused highlight)
 // ---------------------------------------------------------
 
-class BedrockTextField extends StatelessWidget {
+class BedrockTextField extends StatefulWidget {
   final String label;
   final String? hintText;
   final String? errorText;
@@ -158,6 +158,8 @@ class BedrockTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final TextInputType? keyboardType;
   final FormFieldValidator<String>? validator;
+  final List<String>? autofillHints;
+  final int? maxLines;
 
   const BedrockTextField({
     super.key,
@@ -169,19 +171,94 @@ class BedrockTextField extends StatelessWidget {
     this.onChanged,
     this.keyboardType,
     this.validator,
+    this.autofillHints,
+    this.maxLines = 1,
   });
 
   @override
+  State<BedrockTextField> createState() => _BedrockTextFieldState();
+}
+
+class _BedrockTextFieldState extends State<BedrockTextField> {
+  late final TextEditingController _controller;
+  String? _localError;
+  bool _hasBeenEdited = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = widget.controller ?? TextEditingController();
+    _controller.addListener(_validateInput);
+  }
+
+  @override
+  void dispose() {
+    if (widget.controller == null) {
+      _controller.dispose();
+    } else {
+      _controller.removeListener(_validateInput);
+    }
+    super.dispose();
+  }
+
+  void _validateInput() {
+    if (_controller.text.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _localError = null;
+          _hasBeenEdited = false;
+        });
+      }
+      return;
+    }
+    if (widget.validator != null) {
+      final validationResult = widget.validator!(_controller.text);
+      if (mounted) {
+        setState(() {
+          _localError = validationResult;
+          _hasBeenEdited = true;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isValid = _hasBeenEdited && _localError == null;
+    final isInvalid = _hasBeenEdited && _localError != null;
+
+    Widget? suffix;
+    if (isValid) {
+      suffix = const Icon(
+        Icons.check_circle_rounded,
+        color: BedrockTheme.hazardSafeDark,
+        size: 20,
+      );
+    } else if (isInvalid) {
+      suffix = const Icon(
+        Icons.error_rounded,
+        color: BedrockTheme.hazardCriticalDark,
+        size: 20,
+      );
+    }
+
     return TextFormField(
-      controller: controller,
-      obscureText: isPassword,
-      onChanged: onChanged,
-      keyboardType: keyboardType,
-      validator: validator,
+      controller: _controller,
+      obscureText: widget.isPassword,
+      onChanged: widget.onChanged,
+      keyboardType: widget.keyboardType,
+      validator: widget.validator,
+      autofillHints: widget.autofillHints,
+      maxLines: widget.maxLines,
       decoration: InputDecoration(
-        hintText: hintText ?? label,
-        errorText: errorText,
+        hintText: widget.hintText ?? widget.label,
+        errorText: widget.errorText ?? _localError,
+        suffixIcon: suffix != null
+            ? Padding(
+                padding: const EdgeInsets.only(right: 12.0),
+                child: suffix,
+              )
+            : null,
       ),
     );
   }
@@ -207,20 +284,72 @@ class BedrockPasswordField extends StatefulWidget {
 
 class _BedrockPasswordFieldState extends State<BedrockPasswordField> {
   bool _obscure = true;
+  late final TextEditingController _controller;
+  String? _localError;
+  bool _hasBeenEdited = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = widget.controller ?? TextEditingController();
+    _controller.addListener(_validateInput);
+  }
+
+  @override
+  void dispose() {
+    if (widget.controller == null) {
+      _controller.dispose();
+    } else {
+      _controller.removeListener(_validateInput);
+    }
+    super.dispose();
+  }
+
+  void _validateInput() {
+    if (_controller.text.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _localError = null;
+          _hasBeenEdited = false;
+        });
+      }
+      return;
+    }
+    if (widget.validator != null) {
+      final validationResult = widget.validator!(_controller.text);
+      if (mounted) {
+        setState(() {
+          _localError = validationResult;
+          _hasBeenEdited = true;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isValid = _hasBeenEdited && _localError == null;
+    final isInvalid = _hasBeenEdited && _localError != null;
+
+    Color getIconColor() {
+      if (isValid) return BedrockTheme.hazardSafeDark;
+      if (isInvalid) return BedrockTheme.hazardCriticalDark;
+      return Theme.of(context).colorScheme.onSurface.withOpacity(0.4);
+    }
+
     return TextFormField(
-      controller: widget.controller,
+      controller: _controller,
       obscureText: _obscure,
       onChanged: widget.onChanged,
       validator: widget.validator,
+      autofillHints: const [AutofillHints.password],
       decoration: InputDecoration(
         hintText: widget.label,
+        errorText: _localError,
         suffixIcon: IconButton(
           icon: Icon(
             _obscure ? Icons.visibility_off : Icons.visibility,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+            color: getIconColor(),
           ),
           tooltip: _obscure ? 'Show password' : 'Hide password',
           onPressed: () => setState(() => _obscure = !_obscure),

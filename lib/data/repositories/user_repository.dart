@@ -31,6 +31,10 @@ class UserRepository implements IUserRepository {
       createdAt: profile.createdAt,
       isBanned: profile.isBanned,
       fcmToken: profile.fcmToken,
+      bio: profile.bio,
+      birthdate: profile.birthdate,
+      followers: profile.followers,
+      following: profile.following,
     );
     await _userDataSource.updateUserProfile(uid, userDto.toFirestore());
   }

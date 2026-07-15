@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/models/domain_models.dart';
 import '../../data/repositories/hazard_repository.dart';
 import '../services/firebase_storage_service.dart';
@@ -68,10 +67,7 @@ class HazardFeedProvider extends ChangeNotifier {
           docId,
         );
         if (downloadUrl != null) {
-          await FirebaseFirestore.instance
-              .collection('hazards')
-              .doc(docId)
-              .update({'imageUrl': downloadUrl});
+          await _hazardRepository.updateHazardImage(docId, downloadUrl);
         }
       }
 

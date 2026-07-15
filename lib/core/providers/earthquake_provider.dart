@@ -14,6 +14,7 @@ class EarthquakeProvider extends ChangeNotifier {
   List<EarthquakeModel> get earthquakes => _earthquakes;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get isUsingServerCache => _earthquakeRepository.isUsingServerCache;
 
   Future<void> fetchEarthquakes(double lat, double lng) async {
     _isLoading = true;

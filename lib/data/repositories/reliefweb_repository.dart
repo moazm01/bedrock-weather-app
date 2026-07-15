@@ -8,6 +8,9 @@ class ReliefWebRepository implements IReliefWebRepository {
   ReliefWebRepository(this._reliefWebDataSource);
 
   @override
+  bool get isUsingServerCache => _reliefWebDataSource.lastRequestUsedServerCache;
+
+  @override
   Future<List<ReliefWebReportModel>> getRecentReports() async {
     final data = await _reliefWebDataSource.fetchReports();
     final List<ReliefWebReportModel> list = [];

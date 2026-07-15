@@ -86,11 +86,26 @@ class HazardCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      'By ${hazard.reporterName} • ${hazard.distanceMeters.toStringAsFixed(0)}m away',
-                      style: Theme.of(context).textTheme.labelSmall,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.of(context).pushNamed(
+                          '/profile_detail',
+                          arguments: {
+                            'uid': hazard.reporterId,
+                            'username': hazard.reporterName,
+                          },
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(4),
+                      child: Text(
+                        'By ${hazard.reporterName} • ${hazard.distanceMeters.toStringAsFixed(0)}m away',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),

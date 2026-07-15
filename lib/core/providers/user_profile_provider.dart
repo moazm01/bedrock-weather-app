@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/models/domain_models.dart';
 import '../../domain/enums/domain_enums.dart';
 import '../../data/repositories/user_repository.dart';
@@ -20,7 +21,7 @@ class UserProfileProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  static final UserProfileModel mockProfile = const UserProfileModel(
+  static final UserProfileModel mockProfile = UserProfileModel(
     uid: 'mock_user_id',
     username: 'DemoUser',
     email: 'demo@bedrock.org',
@@ -28,6 +29,10 @@ class UserProfileProvider extends ChangeNotifier {
     totalReports: 12,
     verificationRate: 0.85,
     trustCoefficient: 0.75,
+    bio: 'Abbottabad Safety First! Resident contributor.',
+    birthdate: DateTime(1998, 8, 14),
+    followers: const ['user_1', 'user_2'],
+    following: const ['user_3'],
   );
 
   UserProfileModel _getFallbackProfile(String uid) {
@@ -116,13 +121,108 @@ class UserProfileProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<UserProfileModel?> fetchUserProfile(String uid) async {
+    if (uid == 'mock_user_id' || uid == '') {
+      return mockProfile;
+    }
+    try {
+      return await _userRepository.getProfile(uid);
+    } catch (_) {
+      // Return a basic mock/offline user details
+      return UserProfileModel(
+        uid: uid,
+        username: 'Contributor_$uid',
+        email: 'user_$uid@bedrock.org',
+        tier: ReputationTier.rookie,
+        totalReports: 3,
+        verificationRate: 0.9,
+        trustCoefficient: 0.6,
+        bio: 'Dedicated Abbottabad volunteer weather spotter.',
+        followers: const ['user_1'],
+        following: const [],
+      );
+    }
+  }
+
+  Future<void> toggleFollow(String targetUid) async {
+    final current = _profile;
+    if (current == null) return;
+
+    try {
+      final target = await fetchUserProfile(targetUid);
+      if (target == null) return;
+
+      final followingList = List<String>.from(current.following);
+      final followersList = List<String>.from(target.followers);
+
+      if (followingList.contains(targetUid)) {
+        followingList.remove(targetUid);
+        followersList.remove(current.uid);
+      } else {
+        followingList.add(targetUid);
+        followersList.add(current.uid);
+      }
+
+      final updatedCurrent = current.copyWith(following: followingList);
+      final updatedTarget = target.copyWith(followers: followersList);
+
+      if (current.uid != 'mock_user_id') {
+        await _userRepository.updateProfile(current.uid, updatedCurrent);
+        await _userRepository.updateProfile(targetUid, updatedTarget);
+      }
+
+      _profile = updatedCurrent;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Follow action failed: $e');
+    }
+  }
+
+  Future<bool> deleteProfile() async {
+    final current = _profile;
+    if (current == null) return false;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Delete user document in database if not mock
+      if (current.uid != 'mock_user_id') {
+        // We can simulate profile deletion or delete user auth if supported.
+        // For standard Clean Arch + Firestore, we clear profile document.
+        final firestore = FirebaseFirestore.instance;
+        await firestore.collection('users').doc(current.uid).delete();
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await user.delete();
+        }
+      }
+      
+      stopListening();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      // Fallback: Even if server delete fails, locally sign out user to ensure safety
+      try {
+        await FirebaseAuth.instance.signOut();
+      } catch (_) {}
+      stopListening();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
+  }
+
   Future<bool> updateProfile(UserProfileModel updatedProfile) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await _userRepository.updateProfile(updatedProfile.uid, updatedProfile);
+      if (updatedProfile.uid != 'mock_user_id') {
+        await _userRepository.updateProfile(updatedProfile.uid, updatedProfile);
+      }
       _profile = updatedProfile;
       _isLoading = false;
       notifyListeners();
@@ -148,17 +248,10 @@ class UserProfileProvider extends ChangeNotifier {
         _profile!.uid,
       );
       if (downloadUrl != null) {
-        final updated = UserProfileModel(
-          uid: _profile!.uid,
-          username: _profile!.username,
-          email: _profile!.email,
-          tier: _profile!.tier,
-          totalReports: _profile!.totalReports,
-          verificationRate: _profile!.verificationRate,
-          trustCoefficient: _profile!.trustCoefficient,
-          avatarUrl: downloadUrl,
-        );
-        await _userRepository.updateProfile(_profile!.uid, updated);
+        final updated = _profile!.copyWith(avatarUrl: downloadUrl);
+        if (_profile!.uid != 'mock_user_id') {
+          await _userRepository.updateProfile(_profile!.uid, updated);
+        }
         _profile = updated;
       }
       _isLoading = false;

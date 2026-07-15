@@ -8,6 +8,9 @@ class EarthquakeRepository implements IEarthquakeRepository {
   EarthquakeRepository(this._earthquakeDataSource);
 
   @override
+  bool get isUsingServerCache => _earthquakeDataSource.lastRequestUsedServerCache;
+
+  @override
   Future<List<EarthquakeModel>> getRecentEarthquakes(
     double lat,
     double lng,

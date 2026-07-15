@@ -28,52 +28,20 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
   String? _localImagePath;
 
   void _pickImage() async {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(BedrockConstants.radiusLarge),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Feature Locked'),
+        content: const Text(
+          'Adding photo evidence requires upgrading to a Firebase Blaze Plan (Pay-as-you-go).',
         ),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          color: BedrockTheme.surfaceDark,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Select Photo Source',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.photo_library_rounded),
-                title: const Text('Gallery'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final path = await _imagePickerService.pickImageFromGallery();
-                  if (path != null) {
-                    setState(() => _localImagePath = path);
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt_rounded),
-                title: const Text('Camera'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final path = await _imagePickerService.pickImageFromCamera();
-                  if (path != null) {
-                    setState(() => _localImagePath = path);
-                  }
-                },
-              ),
-            ],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK'),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -225,26 +193,26 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: BedrockConstants.space12),
-              TextFormField(
+              BedrockTextField(
+                label: 'Description',
+                hintText: 'Provide details to help verify this report...',
                 controller: _descController,
                 maxLines: 4,
                 validator: (v) {
-                  if (v == null || v.trim().length < 5) {
-                    return 'Please provide at least 5 characters of context.';
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Please provide a description.';
+                  }
+                  if (v.trim().length < 10) {
+                    return 'Please provide at least 10 characters of context.';
+                  }
+                  if (v.trim().length > 1000) {
+                    return 'Description cannot exceed 1000 characters.';
+                  }
+                  if (RegExp(r'(.)\1{4,}').hasMatch(v)) {
+                    return 'Spam detected. Avoid repeating characters.';
                   }
                   return null;
                 },
-                decoration: InputDecoration(
-                  hintText: 'Provide details to help verify this report...',
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.secondary,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      BedrockConstants.radiusMedium,
-                    ),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
               ),
               const SizedBox(height: BedrockConstants.space24),
               Text(

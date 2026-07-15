@@ -9,5 +9,6 @@ abstract class IHazardRepository {
   );
   Future<String> submitReport(HazardDisplayModel hazard);
   Future<void> vote(String hazardId, bool isUpvote);
+  Future<void> updateHazardImage(String hazardId, String imageUrl);
   Stream<List<HazardDisplayModel>> streamLiveHazards(double lat, double lng);
 }

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/fcm_notification_service.dart';
+import '../../data/datasources/remote/firestore_user_datasource.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
@@ -20,10 +22,23 @@ class AuthProvider extends ChangeNotifier {
   String? get currentUserId => _authService.currentUserId;
 
   void _init() {
-    _authSubscription = _authService.authStateChanges.listen((status) {
+    _authSubscription = _authService.authStateChanges.listen((status) async {
       _isAuthenticated = status;
       _errorMessage = null;
       notifyListeners();
+
+      if (status && _authService.currentUserId != null) {
+        try {
+          final fcm = FcmNotificationService();
+          final token = await fcm.getToken();
+          if (token != null) {
+            await FirestoreUserDataSource().updateUserProfile(
+              _authService.currentUserId!,
+              {'fcmToken': token},
+            );
+          }
+        } catch (_) {}
+      }
     });
   }
 

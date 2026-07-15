@@ -179,11 +179,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 label: 'Email',
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
+                                autofillHints: const [AutofillHints.email],
                                 validator: (v) {
                                   if (v == null || v.isEmpty) {
                                     return 'Email is required';
                                   }
-                                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                                  if (v.length > 100) {
+                                    return 'Email must be less than 100 characters';
+                                  }
+                                  final emailRegex = RegExp(
+                                    r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                                  );
                                   if (!emailRegex.hasMatch(v)) {
                                     return 'Enter a valid email address';
                                   }

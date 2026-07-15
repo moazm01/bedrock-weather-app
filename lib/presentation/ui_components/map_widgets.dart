@@ -75,7 +75,7 @@ class _BedrockMapWidgetState extends State<BedrockMapWidget>
       const LatLng(37.5, 77.8),
     );
 
-    return FlutterMap(
+    final mapWidget = FlutterMap(
       mapController: widget.mapController,
       options: MapOptions(
         initialCenter: userCoords,
@@ -351,6 +351,51 @@ class _BedrockMapWidgetState extends State<BedrockMapWidget>
             ),
           ],
         ),
+      ],
+    );
+
+    return Stack(
+      children: [
+        mapWidget,
+        if (!eqProvider.isUsingServerCache)
+          Positioned(
+            top: 16,
+            right: 16,
+            child: SafeArea(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.black87,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.info_outline,
+                    color: Colors.amber,
+                  ),
+                  tooltip: 'Direct API Fallback Mode',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('Direct API Fallback'),
+                        content: const Text(
+                          'This earthquake data is being fetched directly from the USGS API.\n\n'
+                          'To enable server-side caching and reduce device bandwidth, '
+                          'deploy the getEarthquakeData Cloud Function (requires a Firebase Blaze Plan).',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

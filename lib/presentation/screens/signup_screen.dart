@@ -141,11 +141,26 @@ class _SignupScreenState extends State<SignupScreen> {
                       BedrockTextField(
                         label: 'Username',
                         controller: _usernameController,
+                        autofillHints: const [AutofillHints.newUsername],
                         validator: (v) {
-                          if (v == null || v.isEmpty)
+                          if (v == null || v.isEmpty) {
                             return 'Username is required';
-                          if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v))
+                          }
+                          if (v.length < 3) {
+                            return 'Username must be at least 3 characters';
+                          }
+                          if (v.length > 20) {
+                            return 'Username must be less than 20 characters';
+                          }
+                          if (!RegExp(r'^[a-zA-Z]').hasMatch(v)) {
+                            return 'Username must start with a letter';
+                          }
+                          if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v)) {
                             return 'Use only letters, numbers, and underscores';
+                          }
+                          if (v.contains('__')) {
+                            return 'Username cannot contain consecutive underscores';
+                          }
                           return null;
                         },
                       ),
@@ -154,11 +169,17 @@ class _SignupScreenState extends State<SignupScreen> {
                         label: 'Email',
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
                         validator: (v) {
                           if (v == null || v.isEmpty) {
                             return 'Email is required';
                           }
-                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                          if (v.length > 100) {
+                            return 'Email must be less than 100 characters';
+                          }
+                          final emailRegex = RegExp(
+                            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                          );
                           if (!emailRegex.hasMatch(v)) {
                             return 'Enter a valid email address';
                           }
@@ -170,10 +191,24 @@ class _SignupScreenState extends State<SignupScreen> {
                         label: 'Password',
                         controller: _passwordController,
                         validator: (v) {
-                          if (v == null || v.isEmpty)
+                          if (v == null || v.isEmpty) {
                             return 'Password is required';
-                          if (v.length < 6)
-                            return 'Password must be at least 6 characters';
+                          }
+                          if (v.length < 8) {
+                            return 'Password must be at least 8 characters';
+                          }
+                          if (!RegExp(r'[A-Z]').hasMatch(v)) {
+                            return 'Must contain at least 1 uppercase letter';
+                          }
+                          if (!RegExp(r'[a-z]').hasMatch(v)) {
+                            return 'Must contain at least 1 lowercase letter';
+                          }
+                          if (!RegExp(r'[0-9]').hasMatch(v)) {
+                            return 'Must contain at least 1 digit';
+                          }
+                          if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) {
+                            return 'Must contain at least 1 special character';
+                          }
                           return null;
                         },
                       ),

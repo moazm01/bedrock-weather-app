@@ -233,9 +233,35 @@ class FakeFirestoreHazardDataSource implements FirestoreHazardDataSource {
       );
     }
   }
+
+  @override
+  Future<void> updateHazardImage(String hazardId, String imageUrl) async {
+    final existing = hazardsDb[hazardId];
+    if (existing != null) {
+      hazardsDb[hazardId] = HazardDto(
+        id: existing.id,
+        type: existing.type,
+        description: existing.description,
+        upvotes: existing.upvotes,
+        downvotes: existing.downvotes,
+        trustScore: existing.trustScore,
+        reporterName: existing.reporterName,
+        reporterTier: existing.reporterTier,
+        reportedAt: existing.reportedAt,
+        latitude: existing.latitude,
+        longitude: existing.longitude,
+        geohash: existing.geohash,
+        reporterId: existing.reporterId,
+        imageUrl: imageUrl,
+      );
+    }
+  }
 }
 
 class FakeOpenMeteoWeatherDataSource implements OpenMeteoWeatherDataSource {
+  @override
+  bool lastRequestUsedServerCache = true;
+
   @override
   Future<Map<String, dynamic>> fetchWeatherData(double lat, double lng) async {
     return {
