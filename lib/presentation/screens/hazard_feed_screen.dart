@@ -78,33 +78,42 @@ class _HazardFeedScreenState extends State<HazardFeedScreen>
       appBar: AppBar(
         title: const Text('Abbottabad Hazard Feed'),
         actions: [
-          if (!reliefWebProvider.isUsingServerCache)
-            IconButton(
-              icon: const Icon(
-                Icons.info_outline,
-                color: Colors.amber,
-              ),
-              tooltip: 'Direct API Fallback Mode',
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (dialogContext) => AlertDialog(
-                    title: const Text('Direct API Fallback'),
-                    content: const Text(
-                      'This UN ReliefWeb feed is being fetched directly from the ReliefWeb API.\n\n'
-                      'To enable server-side caching and reduce device bandwidth, '
-                      'deploy the getReliefWebReports Cloud Function (requires a Firebase Blaze Plan).',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text('OK'),
-                      ),
+          IconButton(
+            icon: Icon(
+              Icons.info_outline,
+              color: reliefWebProvider.isUsingServerCache ? Colors.white70 : Colors.amber,
+            ),
+            tooltip: 'Feature & API Status',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  backgroundColor: BedrockTheme.surfaceDark,
+                  title: const Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.amber),
+                      SizedBox(width: 8),
+                      Text('Disaster Feed Status', style: TextStyle(fontSize: 16)),
                     ],
                   ),
-                );
-              },
-            ),
+                  content: Text(
+                    reliefWebProvider.isUsingServerCache
+                        ? 'Server Caching Active: Disaster reports are served via Firebase Cloud Functions.'
+                        : 'Direct Client API Active: Disaster logs are currently fetched directly via NASA EONET / ReliefWeb APIs.\n\n'
+                            '• Firebase Blaze Plan: Server-side caching Cloud Function (getReliefWebReports) requires a Firebase Blaze Plan.\n'
+                            '• Direct Fallback: Client direct API fetching ensures disaster events remain 100% accessible even without Cloud Functions.',
+                    style: const TextStyle(fontSize: 13, height: 1.4),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
@@ -138,7 +147,7 @@ class _HazardFeedScreenState extends State<HazardFeedScreen>
                 Tab(text: 'All Alerts'),
                 Tab(text: 'Floods'),
                 Tab(text: 'Road Blocks'),
-                Tab(text: 'UN ReliefWeb'),
+                Tab(text: 'Disaster Relief'),
               ],
               onTap: (index) {
                 setState(() {});

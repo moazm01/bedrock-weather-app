@@ -300,14 +300,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   title: const Text('Push Notifications'),
-                  trailing: Switch.adaptive(
-                    value: _notificationsEnabled,
-                    activeColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (v) {
-                      setState(() {
-                        _notificationsEnabled = v;
-                      });
-                    },
+                  subtitle: const Text('Real-time hazard alerts & broadcasts', style: TextStyle(fontSize: 11, color: Colors.white54)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.info_outline, size: 18, color: Colors.amber),
+                        tooltip: 'Notification Feature Status',
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: BedrockTheme.surfaceDark,
+                              title: const Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: Colors.amber),
+                                  SizedBox(width: 8),
+                                  Text('Notification Status', style: TextStyle(fontSize: 16)),
+                                ],
+                              ),
+                              content: const Text(
+                                '• Firestore Live Streams: Instant in-app alerts are active for all online users via Firestore snapshots.\n\n'
+                                '• Background FCM Push: Push notifications to backgrounded devices require FCM server keys & Blaze plan deployment.',
+                                style: TextStyle(fontSize: 13, height: 1.4),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      Switch.adaptive(
+                        value: _notificationsEnabled,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        onChanged: (v) {
+                          setState(() {
+                            _notificationsEnabled = v;
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 ),
                 const Divider(height: 1, color: BedrockTheme.borderSubtle),
@@ -317,12 +353,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   title: const Text('Biometric Login'),
-                  trailing: Switch.adaptive(
-                    value: _biometricEnabled,
-                    activeColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (v) {
-                      _toggleBiometrics(v);
-                    },
+                  subtitle: const Text('Fingerprint / FaceID authentication', style: TextStyle(fontSize: 11, color: Colors.white54)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.info_outline, size: 18, color: Colors.amber),
+                        tooltip: 'Biometrics Status',
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: BedrockTheme.surfaceDark,
+                              title: const Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: Colors.amber),
+                                  SizedBox(width: 8),
+                                  Text('Biometric Status', style: TextStyle(fontSize: 16)),
+                                ],
+                              ),
+                              content: const Text(
+                                '• Hardware Requirement: Biometric login requires device hardware (Fingerprint / FaceID) and enrolled biometrics in OS settings.\n\n'
+                                '• Passcode Fallback: Email/password and backdoor administrator passcode bypass remain available.',
+                                style: TextStyle(fontSize: 13, height: 1.4),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      Switch.adaptive(
+                        value: _biometricEnabled,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        onChanged: (v) {
+                          _toggleBiometrics(v);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -364,7 +436,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Padding(
             padding: EdgeInsets.only(left: 8, bottom: 8),
             child: Text(
-              'ABOUT',
+              'ABOUT & VIVA DEMO',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
@@ -380,24 +452,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: BorderRadius.circular(12),
               side: const BorderSide(color: BedrockTheme.borderSubtle),
             ),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _versionTapCount++;
-                  if (_versionTapCount >= 5) {
-                    _versionTapCount = 0;
-                    _showPasscodeDialog();
-                  }
-                });
-              },
-              child: ListTile(
-                leading: const Icon(
-                  Icons.info_outline_rounded,
-                  color: BedrockTheme.labelSecondaryDark,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.account_tree_rounded,
+                    color: Colors.blueAccent,
+                  ),
+                  title: const Text('Viva Technical Quick Specs'),
+                  subtitle: const Text('Architecture, APIs, & Blaze fallback summary'),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: BedrockTheme.surfaceDark,
+                        title: const Row(
+                          children: [
+                            Icon(Icons.stars_rounded, color: Colors.blueAccent),
+                            SizedBox(width: 8),
+                            Text('Viva System Specs', style: TextStyle(fontSize: 16)),
+                          ],
+                        ),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('📌 Architecture Pattern', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+                              SizedBox(height: 4),
+                              Text('• Clean Architecture (Presentation, Domain, Data, Core)\n• Provider Pattern State Management'),
+                              SizedBox(height: 12),
+                              Text('🌐 External Public APIs Integrated', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                              SizedBox(height: 4),
+                              Text('• Open-Meteo Weather API (Live weather forecasts)\n• USGS Earthquake API (Global seismic alerts)\n• NASA EONET API (Live disaster emergency logs)'),
+                              SizedBox(height: 12),
+                              Text('🔥 Firebase & Blaze Plan Architecture', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amberAccent)),
+                              SizedBox(height: 4),
+                              Text('• Client Direct API Fallbacks active for zero-cost operation\n• Cloud Functions server caching supported when Blaze Plan is deployed\n• Firestore snapshot real-time listeners for live crowdsourced alerts'),
+                              SizedBox(height: 12),
+                              Text('🔑 Backdoor Developer Access', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purpleAccent)),
+                              SizedBox(height: 4),
+                              Text('• Tap Version number 5 times to unlock Admin Panel with Passcode 191105'),
+                            ],
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Close'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-                title: const Text('Version'),
-                subtitle: const Text('1.0.0 (Phase 1)'),
-              ),
+                const Divider(height: 1, color: BedrockTheme.borderSubtle),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _versionTapCount++;
+                      if (_versionTapCount >= 5) {
+                        _versionTapCount = 0;
+                        _showPasscodeDialog();
+                      }
+                    });
+                  },
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.info_outline_rounded,
+                      color: BedrockTheme.labelSecondaryDark,
+                    ),
+                    title: const Text('Version'),
+                    subtitle: const Text('1.0.0 (Tap 5x for Developer Admin Backdoor)'),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

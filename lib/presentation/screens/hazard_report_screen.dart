@@ -215,9 +215,44 @@ class _HazardReportScreenState extends State<HazardReportScreen> {
                 },
               ),
               const SizedBox(height: BedrockConstants.space24),
-              Text(
-                'Attach Photo Evidence (Optional)',
-                style: Theme.of(context).textTheme.titleMedium,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Attach Photo Evidence (Optional)',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.info_outline, size: 20, color: Colors.amber),
+                    tooltip: 'Storage Feature Status',
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          backgroundColor: BedrockTheme.surfaceDark,
+                          title: const Row(
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.amber),
+                              SizedBox(width: 8),
+                              Text('Photo Upload Status', style: TextStyle(fontSize: 16)),
+                            ],
+                          ),
+                          content: const Text(
+                            '• Storage Backend: Uploading images to Firebase Cloud Storage requires upgrading to a Firebase Blaze Plan (Pay-as-you-go).\n\n'
+                            '• Local Preview: Local device photo selection and preview mode remain active during free tier and offline mode.',
+                            style: TextStyle(fontSize: 13, height: 1.4),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: BedrockConstants.space12),
               if (_localImagePath != null) ...[

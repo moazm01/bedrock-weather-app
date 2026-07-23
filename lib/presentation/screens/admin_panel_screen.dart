@@ -87,7 +87,42 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: BedrockTheme.surfaceDark,
-          title: const Text('Send Broadcast Alert'),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Send Broadcast Alert'),
+              IconButton(
+                icon: const Icon(Icons.info_outline, size: 20, color: Colors.amber),
+                tooltip: 'Push Notification Status',
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (infoCtx) => AlertDialog(
+                      backgroundColor: BedrockTheme.surfaceDark,
+                      title: const Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.amber),
+                          SizedBox(width: 8),
+                          Text('Broadcast Engine Status', style: TextStyle(fontSize: 16)),
+                        ],
+                      ),
+                      content: const Text(
+                        '• Real-time Stream: Broadcast alerts instantly propagate to all active clients via Firestore live listeners.\n\n'
+                        '• System Push Notifications: Background push broadcasts via FCM (Firebase Cloud Messaging) require server key setup & Firebase Blaze Plan.',
+                        style: TextStyle(fontSize: 13, height: 1.4),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(infoCtx),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

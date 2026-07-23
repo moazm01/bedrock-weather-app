@@ -263,9 +263,18 @@ class ProfileScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Feature Locked'),
+        backgroundColor: BedrockTheme.surfaceDark,
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.amber),
+            SizedBox(width: 8),
+            Text('Avatar Upload Status', style: TextStyle(fontSize: 16)),
+          ],
+        ),
         content: const Text(
-          'Changing your profile picture requires upgrading to a Firebase Blaze Plan (Pay-as-you-go).',
+          '• Firebase Storage: Uploading custom profile avatars to Cloud Storage requires upgrading to a Firebase Blaze Plan (Pay-as-you-go).\n\n'
+          '• Fallback State: Avatar fallback icons automatically generate initial-based badges with tier styling.',
+          style: TextStyle(fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
